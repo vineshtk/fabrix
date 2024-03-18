@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github/vineshtk/fabrix/pkg/menu"
 )
 
 var version = "0.0.1"
@@ -16,17 +17,14 @@ var rootCmd = &cobra.Command{
 	Long: `fabrix is a tool,
 	that helps chaincode developers to setup a fabric network easily,
 	for deploying and testing the chaincode.`,
-	Run: func(cmd *cobra.Command, args []string) { 
-		fmt.Println("Welcome to Fabrix - The helper tool for chaincode developers to create fabric network, it takes away all the heavy lifting for you!!!")
-		fmt.Println("You will guided during all Hyperledger Fabric deployment. Let's start...")
-		fmt.Println("Plase choose from the menu")
-		fmt.Println("MENU")
-		fmt.Println("N - New network")
-		fmt.Println("S - Select an existing network")
-		fmt.Println("D - Docker status")
-		fmt.Println("C - Clean all Docker resources")
-		fmt.Println("Q - Quit")
-		
+
+	Run: func(cmd *cobra.Command, args []string) {
+		menu.ShowMainMenu()
+		var userInput string
+		fmt.Scan(&userInput)
+		if userInput == "N"{
+			menu.GetInputsFromUser()
+		}
 	},
 }
 

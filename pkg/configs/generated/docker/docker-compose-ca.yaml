@@ -1,0 +1,59 @@
+networks:
+    test:
+        network: fabric_test
+services:
+    ca_org1:
+        command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+        container_name: ca_ORG1
+        environment:
+            - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+            - FABRIC_CA_SERVER_CA_NAME=ca-ORG1
+            - FABRIC_CA_SERVER_TLS_ENABLED=true
+            - FABRIC_CA_SERVER_PORT=7054
+            - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17054
+        image: hyperledger/fabric-ca:1.5.7
+        labels:
+            service: hyperledger-fabric
+        networks: test
+        ports:
+            - 7054:7054
+            - 17054:17054
+        volumes:
+            - ../organizations/fabric-ca/ORG1:/etc/hyperledger/fabric-ca-server
+    ca_org2:
+        command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+        container_name: ca_ORG2
+        environment:
+            - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+            - FABRIC_CA_SERVER_CA_NAME=ca-ORG2
+            - FABRIC_CA_SERVER_TLS_ENABLED=true
+            - FABRIC_CA_SERVER_PORT=8054
+            - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18054
+        image: hyperledger/fabric-ca:1.5.7
+        labels:
+            service: hyperledger-fabric
+        networks: test
+        ports:
+            - 8054:8054
+            - 18054:18054
+        volumes:
+            - ../organizations/fabric-ca/ORG2:/etc/hyperledger/fabric-ca-server
+    ca_org3:
+        command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+        container_name: ca_ORG3
+        environment:
+            - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+            - FABRIC_CA_SERVER_CA_NAME=ca-ORG3
+            - FABRIC_CA_SERVER_TLS_ENABLED=true
+            - FABRIC_CA_SERVER_PORT=9054
+            - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:19054
+        image: hyperledger/fabric-ca:1.5.7
+        labels:
+            service: hyperledger-fabric
+        networks: test
+        ports:
+            - 9054:9054
+            - 19054:19054
+        volumes:
+            - ../organizations/fabric-ca/ORG3:/etc/hyperledger/fabric-ca-server
+version: "3.7"
