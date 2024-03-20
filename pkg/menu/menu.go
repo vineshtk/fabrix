@@ -15,8 +15,8 @@ func ShowMainMenu() {
 	fmt.Println("C - Clean all Docker resources")
 	fmt.Println("Q - Quit")
 	fmt.Print("\n")
-	fmt.Println("Please select from the options: N, S, D, C, Q")
-	fmt.Print("\n\n")
+	fmt.Print("Please select from the options: N, S, D, C, Q : ")
+
 	// color.Cyan("Hello, this text is in cyan!")
 
 }

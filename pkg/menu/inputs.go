@@ -11,6 +11,7 @@ import (
 )
 
 func GetInputsFromUser() {
+	fmt.Print("\n")
 	fmt.Print("Enter the number of organizations: ")
 	numOrganizations, err := getInputAsInt()
 	if err != nil || numOrganizations <= 0 {
