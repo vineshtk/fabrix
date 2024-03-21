@@ -12,6 +12,9 @@ import (
 
 func GetInputsFromUser() {
 	fmt.Print("\n")
+	domainName := ""
+	fmt.Println("Enter the domain name: ")
+	fmt.Scan(&domainName)
 	fmt.Print("Enter the number of organizations: ")
 	numOrganizations, err := getInputAsInt()
 	if err != nil || numOrganizations <= 0 {
@@ -33,13 +36,10 @@ func GetInputsFromUser() {
 			fmt.Println("Invalid input for the number of peers.")
 			return
 		}
-
 		// Store the values in the map
 		OrganizationPeers[orgName] = numPeers
 	}
-
-	configs.CreateConfigs(OrganizationPeers)
-
+	configs.CreateConfigs(domainName, OrganizationPeers)
 }
 
 // getInputAsString reads a line of input from the terminal and returns it as a string.

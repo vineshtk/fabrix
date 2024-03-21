@@ -3,14 +3,17 @@ package configs
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/spf13/viper"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
-func CreateConfigs(orgPeers map[string]int) {
+func CreateConfigs(domainName string,orgPeers map[string]int) {
 
 	CreateDockerComposeCA(orgPeers)
-	CreateDockerComposeMembers(orgPeers)
+	CreateDockerComposeMembers(domainName,orgPeers)
 
 }
 
@@ -63,9 +66,10 @@ func CreateDockerComposeCA(orgPeers map[string]int) {
 		"test",
 	}
 	viper.Set("services.ca_orderer.networks", networkSlice)
-
+	
 	// create configs for all the organisations
 	for org := range orgPeers {
+		org := strings.ToLower(org)
 		viper.Set(fmt.Sprintf("services.ca_%v.image", org), "hyperledger/fabric-ca:1.5.7")
 		viper.Set(fmt.Sprintf("services.ca_%v.labels.service", org), "hyperledger-fabric")
 
@@ -125,7 +129,7 @@ func CreateRegisterEnroll(orgPeers map[string]int) {
 	// how to impliment since viper dont support script file
 }
 
-func CreateDockerComposeMembers(orgPeers map[string]int) {
+func CreateDockerComposeMembers(domainName string,orgPeers map[string]int) {
 
 	//viper.KeyDelimiter(":") to adjest the key delimiter from "." to ":"
 	// for adding keys like "orderer.example.com"
@@ -136,20 +140,16 @@ func CreateDockerComposeMembers(orgPeers map[string]int) {
 	custom_viper.AddConfigPath("pkg/configs/generated/docker")
 	custom_viper.Set("version", "3.7")
 	custom_viper.Set("networks:test:name", "fabric_test")
-
-	// volumeMap := map[string]string{
-	// 	"orderer.example.com":            "",
-	// 	"peer0.manufacturer.example.com": "",
-	// 	"peer0.dealer.example.com":       "",
-	// }
+// volumes will be added when the peers are created
 
 	// creating configs for ordering service
-	custom_viper.Set("volumes:orderer.example.com", "")
-	custom_viper.Set("services:orderer.example.com:container_name", "orderer.example.com")
-	custom_viper.Set("services:orderer.example.com:image", "hyperledger/fabric-orderer:2.5.4")
-	custom_viper.Set("services:orderer.example.com:labels:service", "hyperledger-fabric")
+	
+	custom_viper.Set(fmt.Sprintf("volumes:orderer.%v",domainName), "")
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:container_name",domainName ) ,fmt.Sprintf("orderer.%v", domainName) )
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:image", domainName) , "hyperledger/fabric-orderer:2.5.4")
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:labels:service",domainName )  , "hyperledger-fabric")
 
-	envSlice := []string{
+	ordererEnv := []string{
 		"FABRIC_LOGGING_SPEC=INFO",
 		"ORDERER_GENERAL_LISTENADDRESS=0.0.0.0",
 		"ORDERER_GENERAL_LISTENPORT=7050",
@@ -171,32 +171,32 @@ func CreateDockerComposeMembers(orgPeers map[string]int) {
 		"ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]",
 		"ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]",
 		"ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053",
-		"ORDERER_OPERATIONS_LISTENADDRESS=orderer.example.com:9443",
+		fmt.Sprintf("ORDERER_OPERATIONS_LISTENADDRESS=orderer.%v:9443",domainName),
 		"ORDERER_METRICS_PROVIDER=prometheus",
 	}
-	custom_viper.Set("services:orderer.example.com:environment", envSlice)
-	custom_viper.Set("services:orderer.example.com:working_dir", "/root")
-	custom_viper.Set("services:orderer.example.com:command", "orderer")
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:environment",domainName), ordererEnv)
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:working_dir", domainName) , "/root")
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:command", domainName), "orderer")
 
 	// correct the domain name or keep the example.com
-	ordererVolumeSlice := []string{
-		"../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/var/hyperledger/orderer/msp",
-		"../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/:/var/hyperledger/orderer/tls",
-		"orderer.example.com:/var/hyperledger/production/orderer",
+	ordererVolumes := []string{
+		fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/msp:/var/hyperledger/orderer/msp", domainName, domainName),
+		fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/tls/:/var/hyperledger/orderer/tls", domainName, domainName),
+		fmt.Sprintf("orderer.%v:/var/hyperledger/production/orderer", domainName),
 	}
-	custom_viper.Set("services:orderer.example.com:volumes", ordererVolumeSlice)
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:volumes", domainName), ordererVolumes)
 
-	orderePortSlice := []string{
+	orderePorts := []string{
 		"7050:7050",
 		"7053:7053",
 		"9443:9443",
 	}
-	custom_viper.Set("services:orderer.example.com:ports", orderePortSlice)
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:ports", domainName), orderePorts)
 
 	networkSlice := []string{
-		"automobile",
+		"test",
 	}
-	custom_viper.Set("services:orderer.example.com:networks", networkSlice)
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:networks", domainName) , networkSlice)
 
 	// configs for CLI
 	custom_viper.Set("services:cli:container_name", "cli")
@@ -215,34 +215,30 @@ func CreateDockerComposeMembers(orgPeers map[string]int) {
 	custom_viper.Set("services:cli:working_dir", "/opt/gopath/src/github.com/hyperledger/fabric/peer")
 	custom_viper.Set("services:cli:command", "/bin/bash")
 
-	volumeSliceCLI := []string{
+	CLIVolumes := []string{
 		"/var/run/docker.sock:/host/var/run/docker.sock",
 		"../organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations",
 	}
-	custom_viper.Set("services:cli:volumes", volumeSliceCLI)
+	custom_viper.Set("services:cli:volumes", CLIVolumes)
+	custom_viper.Set("services:cli:networks", networkSlice)
 
-	networkSliceCLI := []string{
-		"test",
-	}
-	custom_viper.Set("services:cli:networks", networkSliceCLI)
-
-	//  this need to be added in for loop
-	//   depends_on:
-	//   - peer0.manufacturer.example.com
-	//   - peer0.dealer.example.com
-	//   - peer0.mvd.example.com
-
-	// custom_viper.Set("services:cli:depends_on", "cli")
-	// custom_viper.Set("services:orderer.example.com:environment", envSlice)
-
-	// for creating port numbers dynamically asw well keeping the peer count
+	// CLI depends will be added from the for loop
+	CLIDepends := []string{}
+	
+	// for creating port numbers dynamically as well keeping the peer count
 	i := 0
-	peerPorts := []int{
+	ports := []int{
 		5984,
+		7051,
+		9444,
 	}
+	caser := cases.Title(language.English)
 
 	// creating couchdb and peers for all the orgs
 	for org, peers := range orgPeers {
+
+		org := strings.ToLower(org)
+		orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
 
 		for peer := 0; peer < peers; peer++ {
 
@@ -258,44 +254,75 @@ func CreateDockerComposeMembers(orgPeers map[string]int) {
 			custom_viper.Set(fmt.Sprintf("services:%vpeer%vdb:environment", org, peer), envCouch)
 
 			portsCouch := []string{
-				fmt.Sprintf("%v:5984", peerPorts[0] + i*2000),
+				fmt.Sprintf("%v:5984", ports[0]+i*2000),
 			}
 			custom_viper.Set(fmt.Sprintf("services:%vpeer%vdb:ports", org, peer), portsCouch)
 			custom_viper.Set(fmt.Sprintf("services:%vpeer%vdb:networks", org, peer), networkSlice)
 
 			// peer config
-			
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:container_name", peer, org, domainName), fmt.Sprintf("services:peer%v.%v.%v", peer, org, domainName))
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:image", peer, org, domainName), "hyperledger/fabric-peer:2.5.4")
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:labels:service", peer, org, domainName), "hyperledger-fabric")
 
+			peerEnv := []string{
+				"FABRIC_LOGGING_SPEC=INFO",
+				"#- FABRIC_LOGGING_SPEC=DEBUG",
+				"CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock",
+				"CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_test",
+				"CORE_PEER_TLS_ENABLED=true",
+				"CORE_PEER_PROFILE_ENABLED=false",
+				"CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt",
+				"CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key",
+				"CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt",
+				"# Peer specific variables",
+				fmt.Sprintf("CORE_PEER_ID=peer%v.%v.%v", peer, org, domainName),
+				fmt.Sprintf("CORE_PEER_ADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
+				fmt.Sprintf("CORE_PEER_LISTENADDRESS=0.0.0.0:%v", ports[1]+i*2000),
+				fmt.Sprintf("CORE_PEER_CHAINCODEADDRESS=peer%v.%v.%v:%v", peer, org, domainName,ports[1]+i*2000+1),
+				fmt.Sprintf("CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:%v", ports[1]+i*2000+1),
+				fmt.Sprintf("CORE_PEER_GOSSIP_BOOTSTRAP=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
+				fmt.Sprintf("CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer%v.%v.%v:%v", peer, org, domainName,ports[1]+i*2000),
+				fmt.Sprintf("CORE_PEER_LOCALMSPID=%v", orgMSP),
+				"CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp",
+				fmt.Sprintf("CORE_OPERATIONS_LISTENADDRESS=peer%v.%v.%v:%v", peer, org, domainName,ports[2]+i*1),
+				"CORE_METRICS_PROVIDER=prometheus",
+				fmt.Sprintf("CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={'peername':'peer%v%v'}", peer, org),
+				"CORE_CHAINCODE_EXECUTETIMEOUT=300s",
+				"CORE_LEDGER_STATE_STATEDATABASE=CouchDB",
+				fmt.Sprintf("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=%v:5984",  fmt.Sprintf("%vpeer%vdb", org, peer)),
+				"CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin",
+				"CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw",
+			}
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:environment", peer, org, domainName), peerEnv)
 
+			peerVolumes := []string{
+				"/var/run/docker.sock:/host/var/run/docker.sock",
+				fmt.Sprintf("../organizations/peerOrganizations/%v.%v/peers/peer%v.%v.%v:/etc/hyperledger/fabric",org,domainName,peer,org, domainName),
+				fmt.Sprintf("peer%v.%v.%v:/var/hyperledger/production",peer,org, domainName ),
+			}
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:volumes", peer, org, domainName), peerVolumes)
 
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:working_dir", peer, org, domainName), "/root")
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:command", peer, org, domainName), "peer node start")
+			peerPorts := []string{
+				fmt.Sprintf("%v:%v", ports[1]+i*2000, ports[1]+i*2000),
+				fmt.Sprintf("%v:%v",ports[2]+i*1, ports[2]+i*1),
+			}
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:ports", peer, org, domainName), peerPorts)
 
+			peerDepends := []string{
+				fmt.Sprintf("%vpeer%vdb", org, peer),
+			}
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:depends_on", peer, org, domainName), peerDepends)
 
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:networks", peer, org, domainName), networkSlice)
 
+			// adding the peer volumes
+			custom_viper.Set(fmt.Sprintf("volumes:peer%v.%v.%v", peer, org, domainName), "")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+			// adding peers to depends field of CLI - may be improved
+			CLIDepends = append(CLIDepends, fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
+			custom_viper.Set("services:cli:depends_on", CLIDepends)
 
 
 			err := custom_viper.SafeWriteConfig()
@@ -390,3 +417,10 @@ func CreateConfigTx() {
 
 // 	fmt.Println("Configuration file created/updated successfully!")
 // }
+
+
+	// volumeMap := map[string]string{
+	// 	"orderer.example.com":            "",
+	// 	"peer0.manufacturer.example.com": "",
+	// 	"peer0.dealer.example.com":       "",
+	// }
