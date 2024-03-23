@@ -106,11 +106,9 @@ func CreateDockerComposeCA(orgPeers map[string]int) {
 
 		viper.Set(fmt.Sprintf("services.ca_%v.networks", org), networkSlice)
 
-		err := viper.SafeWriteConfig()
-		if err != nil {
+		if err := viper.SafeWriteConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileAlreadyExistsError); ok {
-				err = viper.WriteConfig()
-				if err != nil {
+				if err = viper.WriteConfig(); err != nil {
 					log.Fatalf("Error while updating config file %s", err)
 				}
 			} else {
@@ -324,11 +322,9 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			CLIDepends = append(CLIDepends, fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
 			custom_viper.Set("services:cli:depends_on", CLIDepends)
 
-			err := custom_viper.SafeWriteConfig()
-			if err != nil {
+			if err := custom_viper.SafeWriteConfig(); err != nil {
 				if _, ok := err.(viper.ConfigFileAlreadyExistsError); ok {
-					err = custom_viper.WriteConfig()
-					if err != nil {
+					if err = custom_viper.WriteConfig(); err != nil {
 						log.Fatalf("Error while updating config file %s", err)
 					}
 				} else {
