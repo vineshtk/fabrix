@@ -11,6 +11,7 @@ import (
 )
 
 func CreateConfigs(domainName string, orgPeers map[string]int) {
+func CreateConfigs(domainName string, orgPeers map[string]int) {
 
 	CreateDockerComposeCA(orgPeers)
 	CreateDockerComposeMembers(domainName, orgPeers)
@@ -68,9 +69,6 @@ func CreateDockerComposeCA(orgPeers map[string]int) {
 	}
 	viper.Set("services.ca_orderer.networks", networkSlice)
 
-	type Env struct {
-	}
-
 	// create configs for all the organisations
 	for org := range orgPeers {
 		org := strings.ToLower(org)
@@ -110,11 +108,9 @@ func CreateDockerComposeCA(orgPeers map[string]int) {
 
 		viper.Set(fmt.Sprintf("services.ca_%v.networks", org), networkSlice)
 
-		err := viper.SafeWriteConfig()
-		if err != nil {
+		if err := viper.SafeWriteConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileAlreadyExistsError); ok {
-				err = viper.WriteConfig()
-				if err != nil {
+				if err = viper.WriteConfig(); err != nil {
 					log.Fatalf("Error while updating config file %s", err)
 				}
 			} else {
@@ -134,6 +130,7 @@ func CreateRegisterEnroll(orgPeers map[string]int) {
 }
 
 func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
+func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
 	//viper.KeyDelimiter(":") to adjest the key delimiter from "." to ":"
 	// for adding keys like "orderer.example.com"
@@ -147,6 +144,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 	// volumes will be added when the peers are created
 
 	// creating configs for ordering service
+
 	custom_viper.Set(fmt.Sprintf("volumes:orderer.%v", domainName), "")
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:container_name", domainName), fmt.Sprintf("orderer.%v", domainName))
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:image", domainName), "hyperledger/fabric-orderer:2.5.4")
@@ -175,8 +173,11 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 		"ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]",
 		"ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053",
 		fmt.Sprintf("ORDERER_OPERATIONS_LISTENADDRESS=orderer.%v:9443", domainName),
+		fmt.Sprintf("ORDERER_OPERATIONS_LISTENADDRESS=orderer.%v:9443", domainName),
 		"ORDERER_METRICS_PROVIDER=prometheus",
 	}
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:environment", domainName), ordererEnv)
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:working_dir", domainName), "/root")
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:environment", domainName), ordererEnv)
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:working_dir", domainName), "/root")
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:command", domainName), "orderer")
@@ -199,6 +200,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 	networkSlice := []string{
 		"test",
 	}
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:networks", domainName), networkSlice)
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:networks", domainName), networkSlice)
 
 	// configs for CLI
@@ -227,6 +229,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
 	// CLI depends will be added from the for loop
 	CLIDepends := []string{}
+
 
 	// for creating port numbers dynamically as well keeping the peer count
 	i := 0
@@ -282,16 +285,20 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 				fmt.Sprintf("CORE_PEER_ADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
 				fmt.Sprintf("CORE_PEER_LISTENADDRESS=0.0.0.0:%v", ports[1]+i*2000),
 				fmt.Sprintf("CORE_PEER_CHAINCODEADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000+1),
+				fmt.Sprintf("CORE_PEER_CHAINCODEADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000+1),
 				fmt.Sprintf("CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:%v", ports[1]+i*2000+1),
 				fmt.Sprintf("CORE_PEER_GOSSIP_BOOTSTRAP=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
 				fmt.Sprintf("CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
+				fmt.Sprintf("CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
 				fmt.Sprintf("CORE_PEER_LOCALMSPID=%v", orgMSP),
 				"CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp",
+				fmt.Sprintf("CORE_OPERATIONS_LISTENADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[2]+i*1),
 				fmt.Sprintf("CORE_OPERATIONS_LISTENADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[2]+i*1),
 				"CORE_METRICS_PROVIDER=prometheus",
 				fmt.Sprintf("CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={'peername':'peer%v%v'}", peer, org),
 				"CORE_CHAINCODE_EXECUTETIMEOUT=300s",
 				"CORE_LEDGER_STATE_STATEDATABASE=CouchDB",
+				fmt.Sprintf("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=%v:5984", fmt.Sprintf("%vpeer%vdb", org, peer)),
 				fmt.Sprintf("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=%v:5984", fmt.Sprintf("%vpeer%vdb", org, peer)),
 				"CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin",
 				"CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw",
@@ -302,6 +309,8 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 				"/var/run/docker.sock:/host/var/run/docker.sock",
 				fmt.Sprintf("../organizations/peerOrganizations/%v.%v/peers/peer%v.%v.%v:/etc/hyperledger/fabric", org, domainName, peer, org, domainName),
 				fmt.Sprintf("peer%v.%v.%v:/var/hyperledger/production", peer, org, domainName),
+				fmt.Sprintf("../organizations/peerOrganizations/%v.%v/peers/peer%v.%v.%v:/etc/hyperledger/fabric", org, domainName, peer, org, domainName),
+				fmt.Sprintf("peer%v.%v.%v:/var/hyperledger/production", peer, org, domainName),
 			}
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:volumes", peer, org, domainName), peerVolumes)
 
@@ -309,6 +318,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:command", peer, org, domainName), "peer node start")
 			peerPorts := []string{
 				fmt.Sprintf("%v:%v", ports[1]+i*2000, ports[1]+i*2000),
+				fmt.Sprintf("%v:%v", ports[2]+i*1, ports[2]+i*1),
 				fmt.Sprintf("%v:%v", ports[2]+i*1, ports[2]+i*1),
 			}
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:ports", peer, org, domainName), peerPorts)
@@ -327,11 +337,9 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			CLIDepends = append(CLIDepends, fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
 			custom_viper.Set("services:cli:depends_on", CLIDepends)
 
-			err := custom_viper.SafeWriteConfig()
-			if err != nil {
+			if err := custom_viper.SafeWriteConfig(); err != nil {
 				if _, ok := err.(viper.ConfigFileAlreadyExistsError); ok {
-					err = custom_viper.WriteConfig()
-					if err != nil {
+					if err = custom_viper.WriteConfig(); err != nil {
 						log.Fatalf("Error while updating config file %s", err)
 					}
 				} else {
