@@ -22,7 +22,7 @@ var rootCmd = &cobra.Command{
 		menu.ShowMainMenu()
 		var userInput string
 		fmt.Scan(&userInput)
-		if userInput == "N"{
+		if userInput == "N" {
 			menu.GetInputsFromUser()
 		}
 	},

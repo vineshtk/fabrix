@@ -1,7 +1,7 @@
-Clone the repo
-cd KbaFabriX
-go run main.go
-give domain name (eg: auto.com)
-give number of organisations
-give name of organisation
-give number of peers
+# FabriX
+
+FabriX is a tool that helps chaincode developers easily set up a Hyperledger Fabric network.
+
+## 🛠 Built With
+
+[![Go](https://img.shields.io/badge/go-dodgerblue?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
