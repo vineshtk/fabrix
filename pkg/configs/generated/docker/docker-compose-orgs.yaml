@@ -6,8 +6,7 @@ services:
         command: /bin/bash
         container_name: cli
         depends_on:
-            - peer0.org1.example.com
-            - peer0.org2.example.com
+            - peer0.fg.sdf
         environment:
             - GOPATH=/opt/gopath
             - FABRIC_LOGGING_SPEC=INFO
@@ -23,9 +22,21 @@ services:
             - /var/run/docker.sock:/host/var/run/docker.sock
             - ../organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations
         working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
-    orderer.example.com:
+    fgpeer0db:
+        container_name: fgpeer0db
+        environment:
+            - COUCHDB_USER=admin
+            - COUCHDB_PASSWORD=adminpw
+        image: couchdb:3.3.2
+        labels:
+            service: hyperledger-fabric
+        networks:
+            - test
+        ports:
+            - 5984:5984
+    orderer.sdf:
         command: orderer
-        container_name: orderer.example.com
+        container_name: orderer.sdf
         environment:
             - FABRIC_LOGGING_SPEC=INFO
             - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
@@ -47,7 +58,7 @@ services:
             - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
             - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
             - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
-            - ORDERER_OPERATIONS_LISTENADDRESS=orderer.example.com:9443
+            - ORDERER_OPERATIONS_LISTENADDRESS=orderer.sdf:9443
             - ORDERER_METRICS_PROVIDER=prometheus
         image: hyperledger/fabric-orderer:2.5.4
         labels:
@@ -59,39 +70,15 @@ services:
             - 7053:7053
             - 9443:9443
         volumes:
-            - ../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/var/hyperledger/orderer/msp
-            - ../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/:/var/hyperledger/orderer/tls
-            - orderer.example.com:/var/hyperledger/production/orderer
+            - ../organizations/ordererOrganizations/sdf/orderers/orderer.sdf/msp:/var/hyperledger/orderer/msp
+            - ../organizations/ordererOrganizations/sdf/orderers/orderer.sdf/tls/:/var/hyperledger/orderer/tls
+            - orderer.sdf:/var/hyperledger/production/orderer
         working_dir: /root
-    org1peer0db:
-        container_name: org1peer0db
-        environment:
-            - COUCHDB_USER=admin
-            - COUCHDB_PASSWORD=adminpw
-        image: couchdb:3.3.2
-        labels:
-            service: hyperledger-fabric
-        networks:
-            - test
-        ports:
-            - 5984:5984
-    org2peer0db:
-        container_name: org2peer0db
-        environment:
-            - COUCHDB_USER=admin
-            - COUCHDB_PASSWORD=adminpw
-        image: couchdb:3.3.2
-        labels:
-            service: hyperledger-fabric
-        networks:
-            - test
-        ports:
-            - 7984:5984
-    peer0.org1.example.com:
+    peer0.fg.sdf:
         command: peer node start
-        container_name: services:peer0.org1.example.com
+        container_name: services:peer0.fg.sdf
         depends_on:
-            - org1peer0db
+            - fgpeer0db
         environment:
             - FABRIC_LOGGING_SPEC=INFO
             - '#- FABRIC_LOGGING_SPEC=DEBUG'
@@ -103,21 +90,21 @@ services:
             - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
             - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
             - '# Peer specific variables'
-            - CORE_PEER_ID=peer0.org1.example.com
-            - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+            - CORE_PEER_ID=peer0.fg.sdf
+            - CORE_PEER_ADDRESS=peer0.fg.sdf:7051
             - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
-            - CORE_PEER_CHAINCODEADDRESS=peer0.org1.example.com:7052
+            - CORE_PEER_CHAINCODEADDRESS=peer0.fg.sdf:7052
             - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
-            - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.example.com:7051
-            - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
-            - CORE_PEER_LOCALMSPID=Org1MSP
+            - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.fg.sdf:7051
+            - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.fg.sdf:7051
+            - CORE_PEER_LOCALMSPID=FgMSP
             - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
-            - CORE_OPERATIONS_LISTENADDRESS=peer0.org1.example.com:9444
+            - CORE_OPERATIONS_LISTENADDRESS=peer0.fg.sdf:9444
             - CORE_METRICS_PROVIDER=prometheus
-            - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={'peername':'peer0org1'}
+            - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={'peername':'peer0fg'}
             - CORE_CHAINCODE_EXECUTETIMEOUT=300s
             - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
-            - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=org1peer0db:5984
+            - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=fgpeer0db:5984
             - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
             - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
         image: hyperledger/fabric-peer:2.5.4
@@ -130,57 +117,10 @@ services:
             - 9444:9444
         volumes:
             - /var/run/docker.sock:/host/var/run/docker.sock
-            - ../organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com:/etc/hyperledger/fabric
-            - peer0.org1.example.com:/var/hyperledger/production
-        working_dir: /root
-    peer0.org2.example.com:
-        command: peer node start
-        container_name: services:peer0.org2.example.com
-        depends_on:
-            - org2peer0db
-        environment:
-            - FABRIC_LOGGING_SPEC=INFO
-            - '#- FABRIC_LOGGING_SPEC=DEBUG'
-            - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
-            - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_test
-            - CORE_PEER_TLS_ENABLED=true
-            - CORE_PEER_PROFILE_ENABLED=false
-            - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
-            - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
-            - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
-            - '# Peer specific variables'
-            - CORE_PEER_ID=peer0.org2.example.com
-            - CORE_PEER_ADDRESS=peer0.org2.example.com:9051
-            - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
-            - CORE_PEER_CHAINCODEADDRESS=peer0.org2.example.com:9052
-            - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
-            - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.example.com:9051
-            - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.example.com:9051
-            - CORE_PEER_LOCALMSPID=Org2MSP
-            - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
-            - CORE_OPERATIONS_LISTENADDRESS=peer0.org2.example.com:9445
-            - CORE_METRICS_PROVIDER=prometheus
-            - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={'peername':'peer0org2'}
-            - CORE_CHAINCODE_EXECUTETIMEOUT=300s
-            - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
-            - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=org2peer0db:5984
-            - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
-            - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
-        image: hyperledger/fabric-peer:2.5.4
-        labels:
-            service: hyperledger-fabric
-        networks:
-            - test
-        ports:
-            - 9051:9051
-            - 9445:9445
-        volumes:
-            - /var/run/docker.sock:/host/var/run/docker.sock
-            - ../organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com:/etc/hyperledger/fabric
-            - peer0.org2.example.com:/var/hyperledger/production
+            - ../organizations/peerOrganizations/fg.sdf/peers/peer0.fg.sdf:/etc/hyperledger/fabric
+            - peer0.fg.sdf:/var/hyperledger/production
         working_dir: /root
 version: "3.7"
 volumes:
-    orderer.auto.com: ""
-    peer0.org1.example.com: ""
-    peer0.org2.example.com: ""
+    orderer.sdf: ""
+    peer0.fg.sdf: ""
