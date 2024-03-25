@@ -10,7 +10,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-
 func CreateConfigs(domainName string, orgPeers map[string]int) {
 
 	CreateDockerComposeCA(orgPeers)
@@ -181,7 +180,6 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:working_dir", domainName), "/root")
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:command", domainName), "orderer")
 
-	// correct the domain name or keep the example.com
 	ordererVolumes := []string{
 		fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/msp:/var/hyperledger/orderer/msp", domainName, domainName),
 		fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/tls/:/var/hyperledger/orderer/tls", domainName, domainName),
@@ -228,7 +226,6 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
 	// CLI depends will be added from the for loop
 	CLIDepends := []string{}
-
 
 	// for creating port numbers dynamically as well keeping the peer count
 	i := 0
@@ -352,12 +349,21 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 }
 
 func CreateConfigTx(domainName string, orgPeers map[string]int) {
-	
+
 	viper.Reset()
+
+	type Rule struct {
+		Type string `yaml:"Type"`
+		Rule string `yaml:"Rule"`
+	}
+
 	type Policies struct {
-		Readers string `yaml:"Readers"`
-		Writers string `yaml:"Writers"`
-		Admins  string `yaml:"Admins"`
+		Readers              Rule `yaml:"Readers"`
+		Writers              Rule `yaml:"Writers"`
+		Admins               Rule `yaml:"Admins"`
+		LifecycleEndorsement Rule `yaml:"LifecycleEndorsement,omitempty"`
+		Endorsement          Rule `yaml:"Endorsement,omitempty"`
+		BlockValidation      Rule `yaml:"BlockValidation,omitempty"`
 	}
 
 	type Organization struct {
@@ -368,35 +374,135 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 		OrdererEndpoints []string `yaml:"OrdererEndpoints,omitempty"`
 	}
 
+	type BatchStruct struct {
+		MaxMessageCount   int
+		AbsoluteMaxBytes  string
+		PreferredMaxBytes string
+	}
+
+	type ApplicationDefaults struct {
+		Organization string                     `yaml:"Organization"`
+		Policies     Policies                   `yaml:"Policies"`
+		Capabilities map[string]map[string]bool `yaml:"Capabilities"`
+	}
+
+	type OrderDefaults struct {
+		Addresses     []string    `yaml:"Addresses"`
+		BatchTimeout  string      `yaml:"BatchTimeout"`
+		BatchSize     BatchStruct `yaml:"BatchSize"`
+		Organizations string      `yaml:"Organizations"`
+		Policies      Policies    `yaml:"Policies"`
+	}
+
+	type ChannelDefaults struct {
+		Policies     Policies                   `yaml:"Policies"`
+		Capabilities map[string]map[string]bool `yaml:"Capabilities"`
+	}
 	// set the file name, type and path
 	viper.SetConfigName("configtx")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("pkg/configs/generated/config")
 
-	// orgsConfig := []map[string]string{
-	// 	{
-	// 		"name":   "Org1",
-	// 		"domain": "org1.example.com",
-	// 	},
-	// }
-
-	org := Organization{
-
+	ordererOrg := Organization{
 		Name:   "OrdererOrg",
 		ID:     "OrdererMSP",
-		MSPDir: "../organizations/ordererOrganizations/auto.com/msp",
+		MSPDir: fmt.Sprintf("../organizations/ordererOrganizations/%v/msp", domainName),
 		Policies: Policies{
-			Readers: "OR('OrdererMSP.member')",
-			Writers: "OR('OrdererMSP.member')",
-			Admins:  "OR('OrdererMSP.admin')",
+			Readers: Rule{Type: "Signature", Rule: `OR('OrdererMSP.member')`},
+			Writers: Rule{Type: "Signature", Rule: "OR('OrdererMSP.member')"},
+			Admins:  Rule{Type: "Signature", Rule: "OR('OrdererMSP.member')"},
 		},
-		OrdererEndpoints: []string{"orderer.auto.com:7050"},
+		OrdererEndpoints: []string{fmt.Sprintf("orderer.%v:7050", domainName)},
+	}
+
+	caser := cases.Title(language.English)
+	orgs := []Organization{ordererOrg}
+	for org := range orgPeers {
+
+		org := strings.ToLower(org)
+		orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
+
+		otherOrg := Organization{
+			Name:   orgMSP,
+			ID:     orgMSP,
+			MSPDir: fmt.Sprintf("../organizations/peerOrganizations/%v.%v/msp", org, domainName),
+			Policies: Policies{
+				Readers:     Rule{Type: "Signature", Rule: fmt.Sprintf("OR('%v.admin', '%v.peer', '%v.client')", orgMSP, orgMSP, orgMSP)},
+				Writers:     Rule{Type: "Signature", Rule: fmt.Sprintf("OR('%v.admin','%v.client')", orgMSP, orgMSP)},
+				Admins:      Rule{Type: "Signature", Rule: fmt.Sprintf("OR('%v.admin')", orgMSP)},
+				Endorsement: Rule{Type: "Signature", Rule: fmt.Sprintf("OR('%v.peer')", orgMSP)},
+			},
+		}
+		orgs = append(orgs, otherOrg)
 	}
 
 	// Set the organization configuration in Viper
-	viper.Set("Organizations", []Organization{org})
+	viper.Set("Organizations", orgs)
 
-	// viper.Set("Organizations.&OrdererOrg", orgsConfig)
+	Capabilities := map[string]map[string]bool{
+		"Channel":     {"V2_0": true},
+		"Orderer":     {"V2_0": true},
+		"Application": {"V2_5": true},
+	}
+
+	viper.Set("Capabilities.Channel", Capabilities["Channel"])
+	viper.Set("Capabilities.Orderer", Capabilities["Orderer"])
+	viper.Set("Capabilities.Application", Capabilities["Application"])
+
+	// viper.Set("Application.Organizations", "")
+	applicationDefaults := ApplicationDefaults{
+		Organization: "",
+		Policies:     Policies{Readers: Rule{Type: "ImplicitMeta", Rule: "ANY Readers"}, Writers: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}, Admins: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Admins"}, LifecycleEndorsement: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Endorsement"}, Endorsement: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Endorsement"}},
+		Capabilities: map[string]map[string]bool{"<<": Capabilities["Application"]},
+	}
+	viper.Set("Application", applicationDefaults)
+
+	orderDefaults := OrderDefaults{
+		Addresses:     []string{fmt.Sprintf("orderer.%v:7050", domainName)},
+		BatchTimeout:  "2s",
+		BatchSize:     BatchStruct{MaxMessageCount: 10, AbsoluteMaxBytes: "99 MB", PreferredMaxBytes: "512 KB"},
+		Organizations: "",
+		Policies:      Policies{Readers: Rule{Type: "ImplicitMeta", Rule: "ANY Readers"}, Writers: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}, Admins: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Admins"}, BlockValidation: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}},
+	}
+	viper.Set("Orderer", orderDefaults)
+
+	channelDefaults := ChannelDefaults{
+		Policies:     Policies{Readers: Rule{Type: "ImplicitMeta", Rule: "ANY Readers"}, Writers: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}, Admins: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Admins"}, BlockValidation: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}},
+		Capabilities: map[string]map[string]bool{"<<": {"V2_0": true}},
+	}
+	viper.Set("Channel", channelDefaults)
+
+	profiles := map[string]map[string]interface{}{
+		"ThreeOrgsChannel": {"<<":channelDefaults},
+		"orderer":{"<<":orderDefaults},
+		
+	}
+
+
+	// set profile config
+	viper.Set("Profiles", profiles)
+
+	//   <<: *ChannelDefaults
+	//   Orderer:
+	// 	<<: *OrdererDefaults
+	// 	OrdererType: etcdraft
+	// 	EtcdRaft:
+	// 	  Consenters:
+	// 		- Host: orderer.auto.com
+	// 		  Port: 7050
+	// 		  ClientTLSCert: ../organizations/ordererOrganizations/auto.com/orderers/orderer.auto.com/tls/server.crt
+	// 		  ServerTLSCert: ../organizations/ordererOrganizations/auto.com/orderers/orderer.auto.com/tls/server.crt
+	// 	Organizations:
+	// 	  - *OrdererOrg
+	// 	Capabilities: *OrdererCapabilities
+	//   Application:
+	// 	<<: *ApplicationDefaults
+	// 	Organizations:
+	// 	  - *Manufacturer
+	// 	  - *Dealer
+	// 	  - *Mvd
+
+	// 	Capabilities: *ApplicationCapabilities
 
 	err := viper.SafeWriteConfig()
 	if err != nil {

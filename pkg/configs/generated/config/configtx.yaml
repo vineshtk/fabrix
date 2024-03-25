@@ -1,0 +1,141 @@
+application:
+    Organization: ""
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: ANY Readers
+        Writers:
+            Type: ImplicitMeta
+            Rule: ANY Writers
+        Admins:
+            Type: ImplicitMeta
+            Rule: MAJORITY Admins
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: MAJORITY Endorsement
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: MAJORITY Endorsement
+    Capabilities:
+        <<:
+            V2_5: true
+capabilities:
+    application:
+        V2_5: true
+    channel:
+        V2_0: true
+    orderer:
+        V2_0: true
+channel:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: ANY Readers
+        Writers:
+            Type: ImplicitMeta
+            Rule: ANY Writers
+        Admins:
+            Type: ImplicitMeta
+            Rule: MAJORITY Admins
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: ANY Writers
+    Capabilities:
+        <<:
+            V2_0: true
+orderer:
+    Addresses:
+        - orderer.fh:7050
+    BatchTimeout: 2s
+    BatchSize:
+        maxmessagecount: 10
+        absolutemaxbytes: 99 MB
+        preferredmaxbytes: 512 KB
+    Organizations: ""
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: ANY Readers
+        Writers:
+            Type: ImplicitMeta
+            Rule: ANY Writers
+        Admins:
+            Type: ImplicitMeta
+            Rule: MAJORITY Admins
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: ANY Writers
+organizations:
+    - Name: OrdererOrg
+      ID: OrdererMSP
+      MSPDir: ../organizations/ordererOrganizations/fh/msp
+      Policies:
+        Readers:
+            Type: Signature
+            Rule: OR('OrdererMSP.member')
+        Writers:
+            Type: Signature
+            Rule: OR('OrdererMSP.member')
+        Admins:
+            Type: Signature
+            Rule: OR('OrdererMSP.member')
+      OrdererEndpoints:
+        - orderer.fh:7050
+    - Name: FeMSP
+      ID: FeMSP
+      MSPDir: ../organizations/peerOrganizations/fe.fh/msp
+      Policies:
+        Readers:
+            Type: Signature
+            Rule: OR('FeMSP.admin', 'FeMSP.peer', 'FeMSP.client')
+        Writers:
+            Type: Signature
+            Rule: OR('FeMSP.admin','FeMSP.client')
+        Admins:
+            Type: Signature
+            Rule: OR('FeMSP.admin')
+        Endorsement:
+            Type: Signature
+            Rule: OR('FeMSP.peer')
+profiles:
+    ThreeOrgsChannel:
+        <<:
+            Policies:
+                Readers:
+                    Type: ImplicitMeta
+                    Rule: ANY Readers
+                Writers:
+                    Type: ImplicitMeta
+                    Rule: ANY Writers
+                Admins:
+                    Type: ImplicitMeta
+                    Rule: MAJORITY Admins
+                BlockValidation:
+                    Type: ImplicitMeta
+                    Rule: ANY Writers
+            Capabilities:
+                <<:
+                    V2_0: true
+    orderer:
+        <<:
+            Addresses:
+                - orderer.fh:7050
+            BatchTimeout: 2s
+            BatchSize:
+                maxmessagecount: 10
+                absolutemaxbytes: 99 MB
+                preferredmaxbytes: 512 KB
+            Organizations: ""
+            Policies:
+                Readers:
+                    Type: ImplicitMeta
+                    Rule: ANY Readers
+                Writers:
+                    Type: ImplicitMeta
+                    Rule: ANY Writers
+                Admins:
+                    Type: ImplicitMeta
+                    Rule: MAJORITY Admins
+                BlockValidation:
+                    Type: ImplicitMeta
+                    Rule: ANY Writers
