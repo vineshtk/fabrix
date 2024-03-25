@@ -10,7 +10,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-func CreateConfigs(domainName string, orgPeers map[string]int) {
+
 func CreateConfigs(domainName string, orgPeers map[string]int) {
 
 	CreateDockerComposeCA(orgPeers)
@@ -129,7 +129,6 @@ func CreateRegisterEnroll(orgPeers map[string]int) {
 	// how to impliment since viper dont support script file
 }
 
-func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
 	//viper.KeyDelimiter(":") to adjest the key delimiter from "." to ":"
