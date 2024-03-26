@@ -472,37 +472,21 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 	}
 	viper.Set("Channel", channelDefaults)
 
-	profiles := map[string]map[string]interface{}{
-		"ThreeOrgsChannel": {"<<":channelDefaults},
-		"orderer":{"<<":orderDefaults},
-		
+	type Consenters struct {
+		Host          string `yaml:"Host"`
+		Port          string `yaml:"Port"`
+		ClientTLSCert string `yaml:"ClientTLSCert"`
+		ServerTLSCert string `yaml:"ServerTLSCert"`
 	}
 
+	consenters := []Consenters{{Host: fmt.Sprintf("orderer.%v", domainName), Port: "7050", ClientTLSCert: fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/tls/server.crt", domainName,domainName) , ServerTLSCert: fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/tls/server.crt", domainName,domainName)},}
+
+	profiles := map[string]map[string]interface{}{
+		"ThreeOrgsChannel": {"<<": channelDefaults, "orderer": map[string]interface{}{"<<": orderDefaults, "OrdererType": "etcdraft", "EtcdRaft":map[string]interface{}{"Consenters":consenters} , "Organizations":ordererOrg,"Capabilities":Capabilities["Orderer"]},"Application": map[string]interface{}{"<<":applicationDefaults,"Organizations":orgs[1:], "Capabilities": Capabilities["Application"]},
+	}}
 
 	// set profile config
 	viper.Set("Profiles", profiles)
-
-	//   <<: *ChannelDefaults
-	//   Orderer:
-	// 	<<: *OrdererDefaults
-	// 	OrdererType: etcdraft
-	// 	EtcdRaft:
-	// 	  Consenters:
-	// 		- Host: orderer.auto.com
-	// 		  Port: 7050
-	// 		  ClientTLSCert: ../organizations/ordererOrganizations/auto.com/orderers/orderer.auto.com/tls/server.crt
-	// 		  ServerTLSCert: ../organizations/ordererOrganizations/auto.com/orderers/orderer.auto.com/tls/server.crt
-	// 	Organizations:
-	// 	  - *OrdererOrg
-	// 	Capabilities: *OrdererCapabilities
-	//   Application:
-	// 	<<: *ApplicationDefaults
-	// 	Organizations:
-	// 	  - *Manufacturer
-	// 	  - *Dealer
-	// 	  - *Mvd
-
-	// 	Capabilities: *ApplicationCapabilities
 
 	err := viper.SafeWriteConfig()
 	if err != nil {
