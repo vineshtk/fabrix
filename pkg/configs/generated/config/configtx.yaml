@@ -45,7 +45,7 @@ channel:
             V2_0: true
 orderer:
     Addresses:
-        - orderer.fh:7050
+        - orderer.v.con:7050
     BatchTimeout: 2s
     BatchSize:
         maxmessagecount: 10
@@ -68,7 +68,7 @@ orderer:
 organizations:
     - Name: OrdererOrg
       ID: OrdererMSP
-      MSPDir: ../organizations/ordererOrganizations/fh/msp
+      MSPDir: ../organizations/ordererOrganizations/v.con/msp
       Policies:
         Readers:
             Type: Signature
@@ -80,23 +80,23 @@ organizations:
             Type: Signature
             Rule: OR('OrdererMSP.member')
       OrdererEndpoints:
-        - orderer.fh:7050
-    - Name: FeMSP
-      ID: FeMSP
-      MSPDir: ../organizations/peerOrganizations/fe.fh/msp
+        - orderer.v.con:7050
+    - Name: DfMSP
+      ID: DfMSP
+      MSPDir: ../organizations/peerOrganizations/df.v.con/msp
       Policies:
         Readers:
             Type: Signature
-            Rule: OR('FeMSP.admin', 'FeMSP.peer', 'FeMSP.client')
+            Rule: OR('DfMSP.admin', 'DfMSP.peer', 'DfMSP.client')
         Writers:
             Type: Signature
-            Rule: OR('FeMSP.admin','FeMSP.client')
+            Rule: OR('DfMSP.admin','DfMSP.client')
         Admins:
             Type: Signature
-            Rule: OR('FeMSP.admin')
+            Rule: OR('DfMSP.admin')
         Endorsement:
             Type: Signature
-            Rule: OR('FeMSP.peer')
+            Rule: OR('DfMSP.peer')
 profiles:
     ThreeOrgsChannel:
         <<:
@@ -116,26 +116,92 @@ profiles:
             Capabilities:
                 <<:
                     V2_0: true
-    orderer:
-        <<:
-            Addresses:
-                - orderer.fh:7050
-            BatchTimeout: 2s
-            BatchSize:
-                maxmessagecount: 10
-                absolutemaxbytes: 99 MB
-                preferredmaxbytes: 512 KB
-            Organizations: ""
-            Policies:
-                Readers:
-                    Type: ImplicitMeta
-                    Rule: ANY Readers
-                Writers:
-                    Type: ImplicitMeta
-                    Rule: ANY Writers
-                Admins:
-                    Type: ImplicitMeta
-                    Rule: MAJORITY Admins
-                BlockValidation:
-                    Type: ImplicitMeta
-                    Rule: ANY Writers
+        Application:
+            <<:
+                Organization: ""
+                Policies:
+                    Readers:
+                        Type: ImplicitMeta
+                        Rule: ANY Readers
+                    Writers:
+                        Type: ImplicitMeta
+                        Rule: ANY Writers
+                    Admins:
+                        Type: ImplicitMeta
+                        Rule: MAJORITY Admins
+                    LifecycleEndorsement:
+                        Type: ImplicitMeta
+                        Rule: MAJORITY Endorsement
+                    Endorsement:
+                        Type: ImplicitMeta
+                        Rule: MAJORITY Endorsement
+                Capabilities:
+                    <<:
+                        V2_5: true
+            Capabilities:
+                V2_5: true
+            Organizations:
+                - Name: DfMSP
+                  ID: DfMSP
+                  MSPDir: ../organizations/peerOrganizations/df.v.con/msp
+                  Policies:
+                    Readers:
+                        Type: Signature
+                        Rule: OR('DfMSP.admin', 'DfMSP.peer', 'DfMSP.client')
+                    Writers:
+                        Type: Signature
+                        Rule: OR('DfMSP.admin','DfMSP.client')
+                    Admins:
+                        Type: Signature
+                        Rule: OR('DfMSP.admin')
+                    Endorsement:
+                        Type: Signature
+                        Rule: OR('DfMSP.peer')
+        orderer:
+            <<:
+                Addresses:
+                    - orderer.v.con:7050
+                BatchTimeout: 2s
+                BatchSize:
+                    maxmessagecount: 10
+                    absolutemaxbytes: 99 MB
+                    preferredmaxbytes: 512 KB
+                Organizations: ""
+                Policies:
+                    Readers:
+                        Type: ImplicitMeta
+                        Rule: ANY Readers
+                    Writers:
+                        Type: ImplicitMeta
+                        Rule: ANY Writers
+                    Admins:
+                        Type: ImplicitMeta
+                        Rule: MAJORITY Admins
+                    BlockValidation:
+                        Type: ImplicitMeta
+                        Rule: ANY Writers
+            Capabilities:
+                V2_0: true
+            EtcdRaft:
+                Consenters:
+                    - Host: orderer.auto.com
+                      Port: "7050"
+                      ClientTLSCert: ../organizations/ordererOrganizations/auto.com/orderers/orderer.auto.com/tls/server.crt
+                      ServerTLSCert: ../organizations/ordererOrganizations/auto.com/orderers/orderer.auto.com/tls/server.crt
+            OrdererType: etcdraft
+            Organizations:
+                Name: OrdererOrg
+                ID: OrdererMSP
+                MSPDir: ../organizations/ordererOrganizations/v.con/msp
+                Policies:
+                    Readers:
+                        Type: Signature
+                        Rule: OR('OrdererMSP.member')
+                    Writers:
+                        Type: Signature
+                        Rule: OR('OrdererMSP.member')
+                    Admins:
+                        Type: Signature
+                        Rule: OR('OrdererMSP.member')
+                OrdererEndpoints:
+                    - orderer.v.con:7050

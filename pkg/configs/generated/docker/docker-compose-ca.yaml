@@ -2,12 +2,12 @@ networks:
     test:
         name: fabric_test
 services:
-    ca_fe:
+    ca_df:
         command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
-        container_name: ca_fe
+        container_name: ca_df
         environment:
             - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-            - FABRIC_CA_SERVER_CA_NAME=ca-fe
+            - FABRIC_CA_SERVER_CA_NAME=ca-df
             - FABRIC_CA_SERVER_TLS_ENABLED=true
             - FABRIC_CA_SERVER_PORT=8054
             - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18054
@@ -20,7 +20,7 @@ services:
             - 8054:8054
             - 18054:18054
         volumes:
-            - ../organizations/fabric-ca/fe:/etc/hyperledger/fabric-ca-server
+            - ../organizations/fabric-ca/df:/etc/hyperledger/fabric-ca-server
     ca_orderer:
         command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
         container_name: ca_orderer
