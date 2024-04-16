@@ -50,7 +50,7 @@ func CreateDockerComposeCA(orgPeers map[string]int) {
 	//** this nee to be changed since we need to add those as strings
 	portSlice := []string{
 		// fmt.Sprintf("%d:%d", ports[0], ports[0]),
-		fmt.Sprintf("%v:%v", ports[1], ports[1]),
+		fmt.Sprintf("%v:%v", ports[0], ports[0]),
 		fmt.Sprintf("%v:%v", ports[1], ports[1]),
 	}
 
@@ -124,8 +124,7 @@ func CreateDockerComposeCA(orgPeers map[string]int) {
 }
 
 func CreateRegisterEnroll(orgPeers map[string]int) {
-	// this need to be addresed
-	// how to impliment since viper dont support script file
+
 }
 
 func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
@@ -143,7 +142,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
 	// creating configs for ordering service
 
-	custom_viper.Set(fmt.Sprintf("volumes:orderer.%v", domainName), "")
+	custom_viper.Set(fmt.Sprintf("volumes:orderer.%v", domainName), map[string]string{})
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:container_name", domainName), fmt.Sprintf("orderer.%v", domainName))
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:image", domainName), "hyperledger/fabric-orderer:2.5.4")
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:labels:service", domainName), "hyperledger-fabric")
@@ -171,7 +170,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 		"ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]",
 		"ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053",
 		fmt.Sprintf("ORDERER_OPERATIONS_LISTENADDRESS=orderer.%v:9443", domainName),
-		fmt.Sprintf("ORDERER_OPERATIONS_LISTENADDRESS=orderer.%v:9443", domainName),
+
 		"ORDERER_METRICS_PROVIDER=prometheus",
 	}
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:environment", domainName), ordererEnv)
@@ -204,8 +203,8 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 	custom_viper.Set("services:cli:container_name", "cli")
 	custom_viper.Set("services:cli:image", "hyperledger/fabric-tools:2.5.4")
 	custom_viper.Set("services:cli:labels:service", "hyperledger-fabric")
-	custom_viper.Set("services:cli:tty", "true")
-	custom_viper.Set("services:cli:stdin_open", "true")
+	custom_viper.Set("services:cli:tty", true)
+	custom_viper.Set("services:cli:stdin_open", true)
 
 	envSliceCLI := []string{
 		"GOPATH=/opt/gopath",
@@ -262,7 +261,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			custom_viper.Set(fmt.Sprintf("services:%vpeer%vdb:networks", org, peer), networkSlice)
 
 			// peer config
-			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:container_name", peer, org, domainName), fmt.Sprintf("services:peer%v.%v.%v", peer, org, domainName))
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:container_name", peer, org, domainName), fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:image", peer, org, domainName), "hyperledger/fabric-peer:2.5.4")
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:labels:service", peer, org, domainName), "hyperledger-fabric")
 
@@ -281,21 +280,21 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 				fmt.Sprintf("CORE_PEER_ADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
 				fmt.Sprintf("CORE_PEER_LISTENADDRESS=0.0.0.0:%v", ports[1]+i*2000),
 				fmt.Sprintf("CORE_PEER_CHAINCODEADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000+1),
-				fmt.Sprintf("CORE_PEER_CHAINCODEADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000+1),
+
 				fmt.Sprintf("CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:%v", ports[1]+i*2000+1),
 				fmt.Sprintf("CORE_PEER_GOSSIP_BOOTSTRAP=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
 				fmt.Sprintf("CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
-				fmt.Sprintf("CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
+
 				fmt.Sprintf("CORE_PEER_LOCALMSPID=%v", orgMSP),
 				"CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp",
 				fmt.Sprintf("CORE_OPERATIONS_LISTENADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[2]+i*1),
-				fmt.Sprintf("CORE_OPERATIONS_LISTENADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[2]+i*1),
+
 				"CORE_METRICS_PROVIDER=prometheus",
 				fmt.Sprintf("CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={'peername':'peer%v%v'}", peer, org),
 				"CORE_CHAINCODE_EXECUTETIMEOUT=300s",
 				"CORE_LEDGER_STATE_STATEDATABASE=CouchDB",
 				fmt.Sprintf("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=%v:5984", fmt.Sprintf("%vpeer%vdb", org, peer)),
-				fmt.Sprintf("CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=%v:5984", fmt.Sprintf("%vpeer%vdb", org, peer)),
+
 				"CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin",
 				"CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw",
 			}
@@ -305,8 +304,6 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 				"/var/run/docker.sock:/host/var/run/docker.sock",
 				fmt.Sprintf("../organizations/peerOrganizations/%v.%v/peers/peer%v.%v.%v:/etc/hyperledger/fabric", org, domainName, peer, org, domainName),
 				fmt.Sprintf("peer%v.%v.%v:/var/hyperledger/production", peer, org, domainName),
-				fmt.Sprintf("../organizations/peerOrganizations/%v.%v/peers/peer%v.%v.%v:/etc/hyperledger/fabric", org, domainName, peer, org, domainName),
-				fmt.Sprintf("peer%v.%v.%v:/var/hyperledger/production", peer, org, domainName),
 			}
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:volumes", peer, org, domainName), peerVolumes)
 
@@ -314,7 +311,6 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:command", peer, org, domainName), "peer node start")
 			peerPorts := []string{
 				fmt.Sprintf("%v:%v", ports[1]+i*2000, ports[1]+i*2000),
-				fmt.Sprintf("%v:%v", ports[2]+i*1, ports[2]+i*1),
 				fmt.Sprintf("%v:%v", ports[2]+i*1, ports[2]+i*1),
 			}
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:ports", peer, org, domainName), peerPorts)
@@ -327,7 +323,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:networks", peer, org, domainName), networkSlice)
 
 			// adding the peer volumes
-			custom_viper.Set(fmt.Sprintf("volumes:peer%v.%v.%v", peer, org, domainName), "")
+			custom_viper.Set(fmt.Sprintf("volumes:peer%v.%v.%v", peer, org, domainName), map[string]string{})
 
 			// adding peers to depends field of CLI - may be improved
 			CLIDepends = append(CLIDepends, fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
@@ -381,17 +377,17 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 	}
 
 	type ApplicationDefaults struct {
-		Organization string                     `yaml:"Organization"`
-		Policies     Policies                   `yaml:"Policies"`
-		Capabilities map[string]map[string]bool `yaml:"Capabilities"`
+		Organizations map[string]string          `yaml:"Organizations"`
+		Policies      Policies                   `yaml:"Policies"`
+		Capabilities  map[string]map[string]bool `yaml:"Capabilities"`
 	}
 
 	type OrderDefaults struct {
-		Addresses     []string    `yaml:"Addresses"`
-		BatchTimeout  string      `yaml:"BatchTimeout"`
-		BatchSize     BatchStruct `yaml:"BatchSize"`
-		Organizations string      `yaml:"Organizations"`
-		Policies      Policies    `yaml:"Policies"`
+		Addresses     []string          `yaml:"Addresses"`
+		BatchTimeout  string            `yaml:"BatchTimeout"`
+		BatchSize     BatchStruct       `yaml:"BatchSize"`
+		Organizations map[string]string `yaml:"Organizations"`
+		Policies      Policies          `yaml:"Policies"`
 	}
 
 	type ChannelDefaults struct {
@@ -451,9 +447,9 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 
 	// viper.Set("Application.Organizations", "")
 	applicationDefaults := ApplicationDefaults{
-		Organization: "",
-		Policies:     Policies{Readers: Rule{Type: "ImplicitMeta", Rule: "ANY Readers"}, Writers: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}, Admins: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Admins"}, LifecycleEndorsement: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Endorsement"}, Endorsement: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Endorsement"}},
-		Capabilities: map[string]map[string]bool{"<<": Capabilities["Application"]},
+		Organizations: map[string]string{},
+		Policies:      Policies{Readers: Rule{Type: "ImplicitMeta", Rule: "ANY Readers"}, Writers: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}, Admins: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Admins"}, LifecycleEndorsement: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Endorsement"}, Endorsement: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Endorsement"}},
+		Capabilities:  map[string]map[string]bool{"<<": Capabilities["Application"]},
 	}
 	viper.Set("Application", applicationDefaults)
 
@@ -461,7 +457,7 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 		Addresses:     []string{fmt.Sprintf("orderer.%v:7050", domainName)},
 		BatchTimeout:  "2s",
 		BatchSize:     BatchStruct{MaxMessageCount: 10, AbsoluteMaxBytes: "99 MB", PreferredMaxBytes: "512 KB"},
-		Organizations: "",
+		Organizations: map[string]string{},
 		Policies:      Policies{Readers: Rule{Type: "ImplicitMeta", Rule: "ANY Readers"}, Writers: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}, Admins: Rule{Type: "ImplicitMeta", Rule: "MAJORITY Admins"}, BlockValidation: Rule{Type: "ImplicitMeta", Rule: "ANY Writers"}},
 	}
 	viper.Set("Orderer", orderDefaults)
@@ -479,11 +475,10 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 		ServerTLSCert string `yaml:"ServerTLSCert"`
 	}
 
-	consenters := []Consenters{{Host: fmt.Sprintf("orderer.%v", domainName), Port: "7050", ClientTLSCert: fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/tls/server.crt", domainName,domainName) , ServerTLSCert: fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/tls/server.crt", domainName,domainName)},}
+	consenters := []Consenters{{Host: fmt.Sprintf("orderer.%v", domainName), Port: "7050", ClientTLSCert: fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/tls/server.crt", domainName, domainName), ServerTLSCert: fmt.Sprintf("../organizations/ordererOrganizations/%v/orderers/orderer.%v/tls/server.crt", domainName, domainName)}}
 
 	profiles := map[string]map[string]interface{}{
-		"ThreeOrgsChannel": {"<<": channelDefaults, "orderer": map[string]interface{}{"<<": orderDefaults, "OrdererType": "etcdraft", "EtcdRaft":map[string]interface{}{"Consenters":consenters} , "Organizations":ordererOrg,"Capabilities":Capabilities["Orderer"]},"Application": map[string]interface{}{"<<":applicationDefaults,"Organizations":orgs[1:], "Capabilities": Capabilities["Application"]},
-	}}
+		"ThreeOrgsChannel": {"<<": channelDefaults, "orderer": map[string]interface{}{"<<": orderDefaults, "OrdererType": "etcdraft", "EtcdRaft": map[string]interface{}{"Consenters": consenters}, "Organizations": ordererOrg, "Capabilities": Capabilities["Orderer"]}, "Application": map[string]interface{}{"<<": applicationDefaults, "Organizations": orgs[1:], "Capabilities": Capabilities["Application"]}}}
 
 	// set profile config
 	viper.Set("Profiles", profiles)

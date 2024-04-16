@@ -1,5 +1,5 @@
 application:
-    Organization: ""
+    Organizations: {}
     Policies:
         Readers:
             Type: ImplicitMeta
@@ -45,13 +45,13 @@ channel:
             V2_0: true
 orderer:
     Addresses:
-        - orderer.v.con:7050
+        - orderer.auto.com:7050
     BatchTimeout: 2s
     BatchSize:
         maxmessagecount: 10
         absolutemaxbytes: 99 MB
         preferredmaxbytes: 512 KB
-    Organizations: ""
+    Organizations: {}
     Policies:
         Readers:
             Type: ImplicitMeta
@@ -68,7 +68,7 @@ orderer:
 organizations:
     - Name: OrdererOrg
       ID: OrdererMSP
-      MSPDir: ../organizations/ordererOrganizations/v.con/msp
+      MSPDir: ../organizations/ordererOrganizations/auto.com/msp
       Policies:
         Readers:
             Type: Signature
@@ -80,23 +80,55 @@ organizations:
             Type: Signature
             Rule: OR('OrdererMSP.member')
       OrdererEndpoints:
-        - orderer.v.con:7050
-    - Name: DfMSP
-      ID: DfMSP
-      MSPDir: ../organizations/peerOrganizations/df.v.con/msp
+        - orderer.auto.com:7050
+    - Name: ManufacturerMSP
+      ID: ManufacturerMSP
+      MSPDir: ../organizations/peerOrganizations/manufacturer.auto.com/msp
       Policies:
         Readers:
             Type: Signature
-            Rule: OR('DfMSP.admin', 'DfMSP.peer', 'DfMSP.client')
+            Rule: OR('ManufacturerMSP.admin', 'ManufacturerMSP.peer', 'ManufacturerMSP.client')
         Writers:
             Type: Signature
-            Rule: OR('DfMSP.admin','DfMSP.client')
+            Rule: OR('ManufacturerMSP.admin','ManufacturerMSP.client')
         Admins:
             Type: Signature
-            Rule: OR('DfMSP.admin')
+            Rule: OR('ManufacturerMSP.admin')
         Endorsement:
             Type: Signature
-            Rule: OR('DfMSP.peer')
+            Rule: OR('ManufacturerMSP.peer')
+    - Name: DealerMSP
+      ID: DealerMSP
+      MSPDir: ../organizations/peerOrganizations/dealer.auto.com/msp
+      Policies:
+        Readers:
+            Type: Signature
+            Rule: OR('DealerMSP.admin', 'DealerMSP.peer', 'DealerMSP.client')
+        Writers:
+            Type: Signature
+            Rule: OR('DealerMSP.admin','DealerMSP.client')
+        Admins:
+            Type: Signature
+            Rule: OR('DealerMSP.admin')
+        Endorsement:
+            Type: Signature
+            Rule: OR('DealerMSP.peer')
+    - Name: MvdMSP
+      ID: MvdMSP
+      MSPDir: ../organizations/peerOrganizations/mvd.auto.com/msp
+      Policies:
+        Readers:
+            Type: Signature
+            Rule: OR('MvdMSP.admin', 'MvdMSP.peer', 'MvdMSP.client')
+        Writers:
+            Type: Signature
+            Rule: OR('MvdMSP.admin','MvdMSP.client')
+        Admins:
+            Type: Signature
+            Rule: OR('MvdMSP.admin')
+        Endorsement:
+            Type: Signature
+            Rule: OR('MvdMSP.peer')
 profiles:
     ThreeOrgsChannel:
         <<:
@@ -118,7 +150,7 @@ profiles:
                     V2_0: true
         Application:
             <<:
-                Organization: ""
+                Organizations: {}
                 Policies:
                     Readers:
                         Type: ImplicitMeta
@@ -141,32 +173,64 @@ profiles:
             Capabilities:
                 V2_5: true
             Organizations:
-                - Name: DfMSP
-                  ID: DfMSP
-                  MSPDir: ../organizations/peerOrganizations/df.v.con/msp
+                - Name: ManufacturerMSP
+                  ID: ManufacturerMSP
+                  MSPDir: ../organizations/peerOrganizations/manufacturer.auto.com/msp
                   Policies:
                     Readers:
                         Type: Signature
-                        Rule: OR('DfMSP.admin', 'DfMSP.peer', 'DfMSP.client')
+                        Rule: OR('ManufacturerMSP.admin', 'ManufacturerMSP.peer', 'ManufacturerMSP.client')
                     Writers:
                         Type: Signature
-                        Rule: OR('DfMSP.admin','DfMSP.client')
+                        Rule: OR('ManufacturerMSP.admin','ManufacturerMSP.client')
                     Admins:
                         Type: Signature
-                        Rule: OR('DfMSP.admin')
+                        Rule: OR('ManufacturerMSP.admin')
                     Endorsement:
                         Type: Signature
-                        Rule: OR('DfMSP.peer')
+                        Rule: OR('ManufacturerMSP.peer')
+                - Name: DealerMSP
+                  ID: DealerMSP
+                  MSPDir: ../organizations/peerOrganizations/dealer.auto.com/msp
+                  Policies:
+                    Readers:
+                        Type: Signature
+                        Rule: OR('DealerMSP.admin', 'DealerMSP.peer', 'DealerMSP.client')
+                    Writers:
+                        Type: Signature
+                        Rule: OR('DealerMSP.admin','DealerMSP.client')
+                    Admins:
+                        Type: Signature
+                        Rule: OR('DealerMSP.admin')
+                    Endorsement:
+                        Type: Signature
+                        Rule: OR('DealerMSP.peer')
+                - Name: MvdMSP
+                  ID: MvdMSP
+                  MSPDir: ../organizations/peerOrganizations/mvd.auto.com/msp
+                  Policies:
+                    Readers:
+                        Type: Signature
+                        Rule: OR('MvdMSP.admin', 'MvdMSP.peer', 'MvdMSP.client')
+                    Writers:
+                        Type: Signature
+                        Rule: OR('MvdMSP.admin','MvdMSP.client')
+                    Admins:
+                        Type: Signature
+                        Rule: OR('MvdMSP.admin')
+                    Endorsement:
+                        Type: Signature
+                        Rule: OR('MvdMSP.peer')
         orderer:
             <<:
                 Addresses:
-                    - orderer.v.con:7050
+                    - orderer.auto.com:7050
                 BatchTimeout: 2s
                 BatchSize:
                     maxmessagecount: 10
                     absolutemaxbytes: 99 MB
                     preferredmaxbytes: 512 KB
-                Organizations: ""
+                Organizations: {}
                 Policies:
                     Readers:
                         Type: ImplicitMeta
@@ -192,7 +256,7 @@ profiles:
             Organizations:
                 Name: OrdererOrg
                 ID: OrdererMSP
-                MSPDir: ../organizations/ordererOrganizations/v.con/msp
+                MSPDir: ../organizations/ordererOrganizations/auto.com/msp
                 Policies:
                     Readers:
                         Type: Signature
@@ -204,4 +268,4 @@ profiles:
                         Type: Signature
                         Rule: OR('OrdererMSP.member')
                 OrdererEndpoints:
-                    - orderer.v.con:7050
+                    - orderer.auto.com:7050
