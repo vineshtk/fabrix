@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github/vineshtk/fabrix/pkg/menu"
 )
 
 var version = "0.0.1"
@@ -19,11 +18,11 @@ var rootCmd = &cobra.Command{
 	for deploying and testing the chaincode.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		menu.ShowMainMenu()
-		var userInput string
-		fmt.Scan(&userInput)
-		if userInput == "N" {
-			menu.GetInputsFromUser()
+		// Show help if no arguments or flags are passed
+		
+		if len(args) == 0 {
+			cmd.Help()
+			os.Exit(0)
 		}
 	},
 }

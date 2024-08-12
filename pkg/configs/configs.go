@@ -3,6 +3,8 @@ package configs
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -12,19 +14,46 @@ import (
 
 func CreateConfigs(domainName string, orgPeers map[string]int) {
 
-	CreateDockerComposeCA(orgPeers)
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting current working directory:", err)
+		return
+	}
+	folder1 := fmt.Sprintf("fabrix/%v/Network/config", domainName)
+	folder2 := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
+	// Create the full path for the new folder
+	folderPath1 := filepath.Join(cwd, folder1)
+	folderPath2 := filepath.Join(cwd, folder2)
+
+	// Create the folder
+	err = os.MkdirAll(folderPath1, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating folder:", err)
+		return
+	}
+	// Create the folder
+	err = os.MkdirAll(folderPath2, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating folder:", err)
+		return
+	}
+
+	fmt.Println("Folder created at:", domainName)
+
+	CreateDockerComposeCA(domainName, orgPeers)
 	CreateDockerComposeMembers(domainName, orgPeers)
-	// ReadConfig()
 	CreateConfigTx(domainName, orgPeers)
 }
 
 // The CreateDockerComposeCA is used to create the CAs for all the organisations and orderer
-func CreateDockerComposeCA(orgPeers map[string]int) {
+func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 
 	// set the file name, type and path
 	viper.SetConfigName("docker-compose-ca")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("pkg/configs/generated/docker")
+	path := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
+	viper.AddConfigPath(path)
 
 	// set values for each fields in docker compose file
 	viper.Set("version", "3.7")
@@ -135,7 +164,10 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
 	custom_viper.SetConfigName("docker-compose-orgs")
 	custom_viper.SetConfigType("yaml")
-	custom_viper.AddConfigPath("pkg/configs/generated/docker")
+
+	path := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
+	custom_viper.AddConfigPath(path)
+
 	custom_viper.Set("version", "3.7")
 	custom_viper.Set("networks:test:name", "fabric_test")
 	// volumes will be added when the peers are created
@@ -397,7 +429,8 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 	// set the file name, type and path
 	viper.SetConfigName("configtx")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("pkg/configs/generated/config")
+	path := fmt.Sprintf("fabrix/%v/Network/config", domainName)
+	viper.AddConfigPath(path)
 
 	ordererOrg := Organization{
 		Name:   "OrdererOrg",

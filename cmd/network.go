@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"github/vineshtk/fabrix/pkg/menu"
+
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +14,12 @@ var networkCmd = &cobra.Command{
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		// if len(args) == 0 {
+		// 	cmd.Help()
+		// 	os.Exit(0)
+		// }
+		menu.ShowMainMenu()
+		menu.GetInputsFromUser()
 	},
 }
 
