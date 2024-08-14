@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -12,38 +13,48 @@ import (
 	"golang.org/x/text/language"
 )
 
+type NetworkInfo struct {
+	NumberOfOrganisations int
+	DomainName            string
+	Organisations         []Organisation
+	Orderer               Organisation
+}
+
+type Organisation struct {
+	Name  string
+	Ca    CA
+	Peers []Peer
+	MSPId string
+	Admin Admin
+	User  User
+}
+
+type CA struct {
+	Name string
+	Port int
+}
+
+type Peer struct {
+	Name string
+	Port int
+}
+
+type Admin struct {
+	Name string
+}
+
+type User struct {
+	Name string
+}
+
+
 func CreateConfigs(domainName string, orgPeers map[string]int) {
-
-	// Get the current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Error getting current working directory:", err)
-		return
-	}
-	folder1 := fmt.Sprintf("fabrix/%v/Network/config", domainName)
-	folder2 := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
-	// Create the full path for the new folder
-	folderPath1 := filepath.Join(cwd, folder1)
-	folderPath2 := filepath.Join(cwd, folder2)
-
-	// Create the folder
-	err = os.MkdirAll(folderPath1, os.ModePerm)
-	if err != nil {
-		fmt.Println("Error creating folder:", err)
-		return
-	}
-	// Create the folder
-	err = os.MkdirAll(folderPath2, os.ModePerm)
-	if err != nil {
-		fmt.Println("Error creating folder:", err)
-		return
-	}
-
-	fmt.Println("Folder created at:", domainName)
-
+	CreateFolders(domainName)
 	CreateDockerComposeCA(domainName, orgPeers)
 	CreateDockerComposeMembers(domainName, orgPeers)
 	CreateConfigTx(domainName, orgPeers)
+	// CreateRegisterEnroll()
+	// CreateCertificates(orgPeers)
 }
 
 // The CreateDockerComposeCA is used to create the CAs for all the organisations and orderer
@@ -114,7 +125,7 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 
 		viper.Set(fmt.Sprintf("services.ca_%v.environment", org), envSlice)
 
-		//** this nee to be changed since we need to add those as strings
+		//** this need to be changed since we need to add those as strings
 		portSlice := []string{
 			fmt.Sprintf("%d:%d", ports[0]+i*1000, ports[0]+i*1000),
 			fmt.Sprintf("%d:%d", ports[1]+i*1000, ports[1]+i*1000),
@@ -152,13 +163,9 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 	fmt.Println("docker-compose-ca.yaml Configuration file created/updated successfully!")
 }
 
-func CreateRegisterEnroll(orgPeers map[string]int) {
-
-}
-
 func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
-	//viper.KeyDelimiter(":") to adjest the key delimiter from "." to ":"
+	//viper.KeyDelimiter(":") to adjust the key delimiter from "." to ":"
 	// for adding keys like "orderer.example.com"
 	var custom_viper = viper.NewWithOptions(viper.KeyDelimiter(":"))
 
@@ -173,7 +180,6 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 	// volumes will be added when the peers are created
 
 	// creating configs for ordering service
-
 	custom_viper.Set(fmt.Sprintf("volumes:orderer.%v", domainName), map[string]string{})
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:container_name", domainName), fmt.Sprintf("orderer.%v", domainName))
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:image", domainName), "hyperledger/fabric-orderer:2.5.4")
@@ -529,6 +535,196 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 	}
 	fmt.Println("configtx.yaml Configuration file created/updated successfully!")
 }
+
+func CreateFolders(domainName string) {
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting current working directory:", err)
+		return
+	}
+	folder1 := fmt.Sprintf("fabrix/%v/Network/config", domainName)
+	folder2 := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
+	// Create the full path for the new folder
+	folderPath1 := filepath.Join(cwd, folder1)
+	folderPath2 := filepath.Join(cwd, folder2)
+
+	// Create the folder
+	err = os.MkdirAll(folderPath1, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating folder:", err)
+		return
+	}
+	// Create the folder
+	err = os.MkdirAll(folderPath2, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating folder:", err)
+		return
+	}
+
+	fmt.Println("Folder created at:", domainName)
+}
+
+func CreateRegisterEnroll() {
+	// Define the file name
+	fileName := "registerEnroll.sh"
+
+	// Open the file for writing, create if it doesn't exist
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Println("Error opening/creating file:", err)
+		return
+	}
+	defer file.Close()
+
+	// Define the content to write (your function)
+	content := `#!/bin/bash
+
+# Define dynamic variables
+CA_HOST="localhost:7054"
+ORG_DOMAIN="manufacturer.auto.com"
+PEER_NAME="peer0"
+
+function createManufacturer() {
+  echo "Enrolling the CA admin"
+  mkdir -p organizations/peerOrganizations/manufacturer.auto.com/
+
+  export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/manufacturer.auto.com/
+
+  set -x
+  fabric-ca-client enroll -u https://admin:adminpw@localhost:7054 --caname ca-manufacturer --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  echo 'NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-manufacturer.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-manufacturer.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-manufacturer.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-manufacturer.pem
+    OrganizationalUnitIdentifier: orderer' > "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/msp/config.yaml"
+
+  mkdir -p "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/msp/tlscacerts"
+  cp "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem" "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/msp/tlscacerts/ca.crt"
+
+  mkdir -p "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/tlsca"
+  cp "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem" "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/tlsca/tlsca.manufacturer.auto.com-cert.pem"
+
+  mkdir -p "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/ca"
+  cp "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem" "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/ca/ca.manufacturer.auto.com-cert.pem"
+
+  echo "Registering peer0"
+  set -x
+  fabric-ca-client register --caname ca-manufacturer --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  echo "Registering user"
+  set -x
+  fabric-ca-client register --caname ca-manufacturer --id.name user1 --id.secret user1pw --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  echo "Registering the org admin"
+  set -x
+  fabric-ca-client register --caname ca-manufacturer --id.name manufactureradmin --id.secret manufactureradminpw --id.type admin --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  echo "Generating the peer0 msp"
+  set -x
+  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-manufacturer -M "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  cp "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/msp/config.yaml"
+
+  echo "Generating the peer0-tls certificates, use --csr.hosts to specify Subject Alternative Names"
+  set -x
+  fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-manufacturer -M "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls" --enrollment.profile tls --csr.hosts peer0.manufacturer.auto.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  cp "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/ca.crt"
+  cp "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/server.crt"
+  cp "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/server.key"
+
+  echo "Generating the user msp"
+  set -x
+  fabric-ca-client enroll -u https://user1:user1pw@localhost:7054 --caname ca-manufacturer -M "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/users/User1@manufacturer.auto.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  cp "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/users/User1@manufacturer.auto.com/msp/config.yaml"
+
+  echo "Generating the org admin msp"
+  set -x
+  fabric-ca-client enroll -u https://manufactureradmin:manufactureradminpw@localhost:7054 --caname ca-manufacturer -M "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/users/Admin@manufacturer.auto.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/manufacturer/ca-cert.pem"
+  { set +x; } 2>/dev/null
+
+  cp "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/manufacturer.auto.com/users/Admin@manufacturer.auto.com/msp/config.yaml"
+}`
+
+	// Write the content to the file
+	_, err = file.WriteString(content)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
+	}
+
+	fmt.Println("Script created successfully")
+}
+
+func CreateCertificates(orgPeers map[string]int) {
+	for orgName, peerCount := range orgPeers {
+		caName := fmt.Sprintf("ca-%s", orgName)
+		adminName := "admin"
+		adminPW := "adminpw"
+		port := 7054
+		tlsCertPath := "${PWD}/organizations/fabric-ca/" + orgName + "/ca-cert.pem"
+
+		fmt.Printf("Processing organization: %s with %d peers\n", orgName, peerCount)
+
+		// Commands with dynamic variables
+		cmds := []string{
+			fmt.Sprintf("echo 'Enrolling the CA admin for %s'", orgName),
+			fmt.Sprintf("mkdir -p organizations/peerOrganizations/%s/", orgName),
+			fmt.Sprintf("export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/%s/", orgName),
+			fmt.Sprintf("fabric-ca-client enroll -u https://%s:%s@localhost:%d --caname %s --tls.certfiles \"%s\"", adminName, adminPW, port, caName, tlsCertPath),
+		}
+
+		for _, cmdStr := range cmds {
+			cmd := exec.Command("bash", "-c", cmdStr)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("Error executing command: %v\n", err)
+				fmt.Println(string(output))
+				return
+			}
+			fmt.Println(string(output))
+		}
+
+		// Additional commands can be added to handle peers for each organization
+		for i := 0; i < peerCount; i++ {
+			peerName := fmt.Sprintf("peer%d.%s", i, orgName)
+			fmt.Printf("Processing %s\n", peerName)
+
+			// Example dynamic command for a peer
+			peerCmd := fmt.Sprintf("fabric-ca-client register --caname %s --id.name %s --id.secret peer%dPW --id.type peer --tls.certfiles \"%s\"", caName, peerName, i, tlsCertPath)
+
+			cmd := exec.Command("bash", "-c", peerCmd)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("Error executing command: %v\n", err)
+				fmt.Println(string(output))
+				return
+			}
+			fmt.Println(string(output))
+		}
+	}
+}
+
+
 
 // func WriteDockerCa() {
 // 	viper.Set("someKey", "newValue")
