@@ -8,8 +8,8 @@ import (
 
 // networkCmd represents the network command
 var networkCmd = &cobra.Command{
-	Use:     "Network",
-	Aliases: []string{"N"},
+	Use:     "Create",
+	Aliases: []string{"C"},
 	Short:   "Use this command to build a new network.",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command.`,
