@@ -6,7 +6,6 @@ import (
 
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -63,6 +62,7 @@ func CreateConfigs(domainName string, orgPeers map[string]int) {
 	CreateDockerComposeMembers(domainName, orgPeers)
 	CreateConfigTx(domainName, orgPeers)
 	CreateRegisterEnroll(domainName, orgPeers)
+	CreateStartNetwork(domainName, orgPeers)
 	// CreateCertificates(orgPeers)
 	// ReadCaConfig(domainName)
 }
@@ -631,6 +631,10 @@ func CreateFolders(domainName string) {
 }
 
 func CreateRegisterEnroll(domainName string, orgPeers map[string]int) {
+
+	// Define the script file path
+	filePath := fmt.Sprintf("./fabrix/%v/Network/registerEnroll.sh", domainName)
+
 	ordererCaPort := info.Orderer.Ca.Port
 
 	scriptContent0 := fmt.Sprintf(`
@@ -715,7 +719,7 @@ function createOrderer() {
   `, domainName, ordererCaPort)
 
 	// Append the second content block to the script file
-	if err := appendToScriptFile(scriptContent0, domainName); err != nil {
+	if err := appendToScriptFile(scriptContent0, filePath); err != nil {
 		fmt.Println("Error appending to script file:", err)
 		return
 	}
@@ -800,7 +804,7 @@ function create%sCertificates(){
 `, orgCap, orgName, domainName, orgName, caPort)
 
 		// Append the second content block to the script file
-		if err := appendToScriptFile(scriptContent1, domainName); err != nil {
+		if err := appendToScriptFile(scriptContent1, filePath); err != nil {
 			fmt.Println("Error appending to script file:", err)
 			return
 		}
@@ -838,7 +842,7 @@ function create%sCertificates(){
 		`, i)
 
 			// Append the second content block to the script file
-			if err := appendToScriptFile(scriptContent2, domainName); err != nil {
+			if err := appendToScriptFile(scriptContent2, filePath); err != nil {
 				fmt.Println("Error appending to script file:", err)
 				return
 			}
@@ -847,7 +851,7 @@ function create%sCertificates(){
 	}
 	create%sCertificates`, orgCap)
 		// Append the second content block to the script file
-		if err := appendToScriptFile(scriptContent3, domainName); err != nil {
+		if err := appendToScriptFile(scriptContent3, filePath); err != nil {
 			fmt.Println("Error appending to script file:", err)
 			return
 		}
@@ -855,9 +859,179 @@ function create%sCertificates(){
 	fmt.Println("Content appended to script file successfully")
 }
 
-func appendToScriptFile(content string, domainName string) error {
-	// Define the script file path
-	filePath := fmt.Sprintf("./fabrix/%v/Network/registerEnroll.sh", domainName)
+func CreateStartNetwork(domainName string, orgPeers map[string]int) {
+	caser := cases.Title(language.English)
+
+	filePath := fmt.Sprintf("./fabrix/%v/Network/startNetwork.sh", domainName)
+	scriptContent0 := fmt.Sprintf(`
+	#!/bin/bash
+	export DOMAIN_NAME="%s"
+
+	echo "------------Register the ca admin for each organization—----------------"
+
+docker compose -f docker/docker-compose-ca.yaml up -d
+sleep 3
+
+sudo chmod -R 777 organizations/
+
+echo "------------Register and enroll the users for each organization—-----------"
+
+chmod +x registerEnroll.sh
+
+./registerEnroll.sh
+sleep 3
+
+echo "—-------------Build the infrastructure—-----------------"
+
+docker compose -f docker/docker-compose-orgs.yaml up -d
+sleep 3
+
+echo "-------------Generate the genesis block—-------------------------------"
+
+export FABRIC_CFG_PATH=${PWD}/config
+
+export CHANNEL_NAME=fabrixchannel
+
+configtxgen -profile ThreeOrgsChannel -outputBlock ${PWD}/channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
+sleep 2
+
+echo "------ Create the application channel------"
+
+export ORDERER_CA=${PWD}/organizations/ordererOrganizations/${DOMAIN_NAME}/orderers/orderer.${DOMAIN_NAME}/msp/tlscacerts/tlsca.${DOMAIN_NAME}-cert.pem
+
+export ORDERER_ADMIN_TLS_SIGN_CERT=${PWD}/organizations/ordererOrganizations/${DOMAIN_NAME}/orderers/orderer.${DOMAIN_NAME}/tls/server.crt
+
+export ORDERER_ADMIN_TLS_PRIVATE_KEY=${PWD}/organizations/ordererOrganizations/${DOMAIN_NAME}/orderers/orderer.${DOMAIN_NAME}/tls/server.key
+
+osnadmin channel join --channelID $CHANNEL_NAME --config-block ${PWD}/channel-artifacts/$CHANNEL_NAME.block -o localhost:7053 --ca-file $ORDERER_CA --client-cert $ORDERER_ADMIN_TLS_SIGN_CERT --client-key $ORDERER_ADMIN_TLS_PRIVATE_KEY
+sleep 2
+
+osnadmin channel list -o localhost:7053 --ca-file $ORDERER_CA --client-cert $ORDERER_ADMIN_TLS_SIGN_CERT --client-key $ORDERER_ADMIN_TLS_PRIVATE_KEY
+sleep 2
+
+export FABRIC_CFG_PATH=${PWD}/peercfg
+export CORE_PEER_TLS_ENABLED=true
+
+	`, domainName)
+
+	if err := appendToScriptFile(scriptContent0, filePath); err != nil {
+		fmt.Println("Error appending to script file:", err)
+		return
+	}
+	peerStringList := []string{}
+
+	for i, org := range keys {
+		org := strings.ToLower(org)
+		orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
+		upperOrg := strings.ToUpper(org)
+		scriptContent1 := fmt.Sprintf(`
+
+	//  Define dynamic variables
+	export ORG_NAME_DOMAIN="%s.%s"
+	export ORG_NAME="%s"
+	export ORG_MSP="%s"
+	`, org, domainName, org, orgMSP)
+
+		if err := appendToScriptFile(scriptContent1, filePath); err != nil {
+			fmt.Println("Error appending to script file:", err)
+			return
+		}
+
+		for j := range info.Organisations[i].Peers {
+			// for testing purpose now we are updating only one peer as anchor peer
+			// and installing chaincode in that peer
+			if j < 1 {
+				peerPort := info.Organisations[i].Peers[j].Port
+				scriptContent2 := fmt.Sprintf(`export PEER="peer%v" 
+	export PEER_PORT=%d
+	export ORG_CAP="%s"
+	
+	export CORE_PEER_LOCALMSPID=${ORG_MSP} 
+	export CORE_PEER_ADDRESS=localhost:${PEER_PORT} 
+	export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/${ORG_NAME_DOMAIN}/peers/${PEER}.${ORG_NAME_DOMAIN}/tls/ca.crt
+	export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/${ORG_NAME_DOMAIN}/users/Admin@${ORG_NAME_DOMAIN}/msp
+	export ${ORG_CAP}_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/${ORG_NAME_DOMAIN}/peers/${PEER}.${ORG_NAME_DOMAIN}/tls/ca.crt
+
+	echo "—---------------Join ${ORG_NAME} peer to the channel—-------------"
+
+	peer channel join -b ${PWD}/channel-artifacts/$CHANNEL_NAME.block
+	sleep 1
+	peer channel list
+
+	echo "—-------------${ORG_NAME} anchor peer update—-----------"
+
+	peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} -c $CHANNEL_NAME --tls --cafile $ORDERER_CA
+	sleep 1
+
+	cd channel-artifacts
+
+	configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
+	jq '.data.data[0].payload.data.config' config_block.json > config.json
+	cp config.json config_copy.json
+
+	jq '.channel_group.groups.Application.groups.${ORG_MSP}.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "${PEER}.${ORG_NAME_DOMAIN}","port": ${PEER_PORT}}]},"version": "0"}}' config_copy.json > modified_config.json
+
+	configtxlator proto_encode --input config.json --type common.Config --output config.pb
+	configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
+	configtxlator compute_update --channel_id $CHANNEL_NAME --original config.pb --updated modified_config.pb --output config_update.pb
+
+	configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
+	echo '{"payload":{"header":{"channel_header":{"channel_id":"'$CHANNEL_NAME'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+	configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
+
+	cd ..
+
+	peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --tls --cafile $ORDERER_CA
+	sleep 1
+
+	echo "—---------------package chaincode—-------------"
+
+	peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/../Chaincode/ --lang golang --label chaincode_1.0
+	sleep 1
+
+	echo "—---------------install chaincode in ${ORG_NAME} peer—-------------"
+
+	peer lifecycle chaincode install chaincode.tar.gz
+	sleep 3
+
+	peer lifecycle chaincode queryinstalled
+
+	echo "—---------------Approve chaincode in ${ORG_NAME} peer—-------------"
+
+	peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --collections-config ../Chaincode/collection.json --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
+	sleep 1}
+
+		`,j, peerPort, upperOrg)
+
+				if err := appendToScriptFile(scriptContent2, filePath); err != nil {
+					fmt.Println("Error appending to script file:", err)
+					return
+				}
+				// for committing chaincode need peer details
+				peerString := fmt.Sprintf("--peerAddresses localhost:%d --tlsRootCertFiles $%s_PEER_TLSROOTCERT", peerPort, upperOrg)
+				peerStringList = append(peerStringList, peerString)
+			}
+
+		}
+	}
+	peerStrings := strings.Join(peerStringList, "  ")
+
+	scriptContent3 := fmt.Sprintf(`
+	echo "—---------------Commit chaincode —-------------"
+	peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --sequence 1 --collections-config ../Chaincode/collection.json --tls --cafile $ORDERER_CA --output json
+	peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --sequence 1 --collections-config ../Chaincode/collection.json --tls --cafile $ORDERER_CA %v
+	sleep 1
+	peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name sample-chaincode --cafile $ORDERER_CA
+
+	`, peerStrings)
+
+	if err := appendToScriptFile(scriptContent3, filePath); err != nil {
+		fmt.Println("Error appending to script file:", err)
+		return
+	}
+}
+
+func appendToScriptFile(content string, filePath string) error {
 	// Open the file in append mode. Create the file if it doesn't exist.
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -880,54 +1054,54 @@ func appendToScriptFile(content string, domainName string) error {
 	return nil
 }
 
-func CreateCertificates(orgPeers map[string]int) {
-	for orgName, peerCount := range orgPeers {
-		caName := fmt.Sprintf("ca-%s", orgName)
-		adminName := "admin"
-		adminPW := "adminpw"
-		port := 7054
-		tlsCertPath := "${PWD}/organizations/fabric-ca/" + orgName + "/ca-cert.pem"
+// func CreateCertificates(orgPeers map[string]int) {
+// 	for orgName, peerCount := range orgPeers {
+// 		caName := fmt.Sprintf("ca-%s", orgName)
+// 		adminName := "admin"
+// 		adminPW := "adminpw"
+// 		port := 7054
+// 		tlsCertPath := "${PWD}/organizations/fabric-ca/" + orgName + "/ca-cert.pem"
 
-		fmt.Printf("Processing organization: %s with %d peers\n", orgName, peerCount)
+// 		fmt.Printf("Processing organization: %s with %d peers\n", orgName, peerCount)
 
-		// Commands with dynamic variables
-		cmds := []string{
-			fmt.Sprintf("echo 'Enrolling the CA admin for %s'", orgName),
-			fmt.Sprintf("mkdir -p organizations/peerOrganizations/%s/", orgName),
-			fmt.Sprintf("export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/%s/", orgName),
-			fmt.Sprintf("fabric-ca-client enroll -u https://%s:%s@localhost:%d --caname %s --tls.certfiles \"%s\"", adminName, adminPW, port, caName, tlsCertPath),
-		}
+// 		// Commands with dynamic variables
+// 		cmds := []string{
+// 			fmt.Sprintf("echo 'Enrolling the CA admin for %s'", orgName),
+// 			fmt.Sprintf("mkdir -p organizations/peerOrganizations/%s/", orgName),
+// 			fmt.Sprintf("export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/%s/", orgName),
+// 			fmt.Sprintf("fabric-ca-client enroll -u https://%s:%s@localhost:%d --caname %s --tls.certfiles \"%s\"", adminName, adminPW, port, caName, tlsCertPath),
+// 		}
 
-		for _, cmdStr := range cmds {
-			cmd := exec.Command("bash", "-c", cmdStr)
-			output, err := cmd.CombinedOutput()
-			if err != nil {
-				fmt.Printf("Error executing command: %v\n", err)
-				fmt.Println(string(output))
-				return
-			}
-			fmt.Println(string(output))
-		}
+// 		for _, cmdStr := range cmds {
+// 			cmd := exec.Command("bash", "-c", cmdStr)
+// 			output, err := cmd.CombinedOutput()
+// 			if err != nil {
+// 				fmt.Printf("Error executing command: %v\n", err)
+// 				fmt.Println(string(output))
+// 				return
+// 			}
+// 			fmt.Println(string(output))
+// 		}
 
-		// Additional commands can be added to handle peers for each organization
-		for i := 0; i < peerCount; i++ {
-			peerName := fmt.Sprintf("peer%d.%s", i, orgName)
-			fmt.Printf("Processing %s\n", peerName)
+// 		// Additional commands can be added to handle peers for each organization
+// 		for i := 0; i < peerCount; i++ {
+// 			peerName := fmt.Sprintf("peer%d.%s", i, orgName)
+// 			fmt.Printf("Processing %s\n", peerName)
 
-			// Example dynamic command for a peer
-			peerCmd := fmt.Sprintf("fabric-ca-client register --caname %s --id.name %s --id.secret peer%dPW --id.type peer --tls.certfiles \"%s\"", caName, peerName, i, tlsCertPath)
+// 			// Example dynamic command for a peer
+// 			peerCmd := fmt.Sprintf("fabric-ca-client register --caname %s --id.name %s --id.secret peer%dPW --id.type peer --tls.certfiles \"%s\"", caName, peerName, i, tlsCertPath)
 
-			cmd := exec.Command("bash", "-c", peerCmd)
-			output, err := cmd.CombinedOutput()
-			if err != nil {
-				fmt.Printf("Error executing command: %v\n", err)
-				fmt.Println(string(output))
-				return
-			}
-			fmt.Println(string(output))
-		}
-	}
-}
+// 			cmd := exec.Command("bash", "-c", peerCmd)
+// 			output, err := cmd.CombinedOutput()
+// 			if err != nil {
+// 				fmt.Printf("Error executing command: %v\n", err)
+// 				fmt.Println(string(output))
+// 				return
+// 			}
+// 			fmt.Println(string(output))
+// 		}
+// 	}
+// }
 
 // reading details from configs
 func ReadCaConfig(domainName string) {
