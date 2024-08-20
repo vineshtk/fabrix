@@ -1,6 +1,7 @@
 package configs
 
 import (
+	_ "embed"
 	"fmt"
 	"sort"
 
@@ -56,15 +57,19 @@ var info *NetworkInfo
 // Create a slice to store the map keys - this is to preserve the looping order
 var keys []string
 
+//go:embed defaults/peercfg/core.yaml
+var coreYaml []byte
+
 func CreateConfigs(domainName string, orgPeers map[string]int) {
 	CreateFolders(domainName)
 	CreateDockerComposeCA(domainName, orgPeers)
 	CreateDockerComposeMembers(domainName, orgPeers)
 	CreateConfigTx(domainName, orgPeers)
+	createPeercfg(domainName)
 	CreateRegisterEnroll(domainName, orgPeers)
 	CreateStartNetwork(domainName, orgPeers)
 	createStopNetwork(domainName)
-	createPeercfg(domainName)
+	
 	// ReadCaConfig(domainName)
 }
 
@@ -599,7 +604,7 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 	}
 	fmt.Println("configtx.yaml Configuration file created/updated successfully!")
 	// fmt.Println("this is info", info)
-	printNetworkInfo(info)
+	// printNetworkInfo(info)
 }
 
 func CreateFolders(domainName string) {
@@ -866,7 +871,7 @@ function create%sCertificates(){
 			return
 		}
 	}
-	fmt.Println("Content appended to script file successfully")
+	fmt.Println("Successfully created registerEnroll.sh")
 }
 
 func CreateStartNetwork(domainName string, orgPeers map[string]int) {
@@ -1038,6 +1043,7 @@ export CORE_PEER_TLS_ENABLED=true
 		fmt.Println("Error appending to script file:", err)
 		return
 	}
+	fmt.Println("Successfully created startNetwork.sh")
 }
 
 func appendToScriptFile(content string, filePath string) error {
@@ -1101,9 +1107,38 @@ func createStopNetwork(domainName string) {
 		fmt.Println("Error appending to script file:", err)
 		return
 	}
+	fmt.Println("Successfully created stopNetwork.sh")
 }
 
 
+func createPeercfg(domainName string) {
+
+    filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
+
+    if err := os.MkdirAll(fmt.Sprintf("./fabrix/%v/Network/peercfg", domainName), os.ModePerm); err != nil {
+        fmt.Printf("Error creating directories, %s\n", err)
+        return
+    }
+
+    newFile, err := os.Create(filePath)
+    if err != nil {
+        fmt.Printf("Error creating file, %s\n", err)
+        return
+    }
+    defer newFile.Close()
+
+    _, err = newFile.Write(coreYaml)
+    if err != nil {
+        fmt.Printf("Error writing to file, %s\n", err)
+        return
+    }
+
+    fmt.Println("successfully created core.yaml")
+}
+
+
+
+// these are for future works
 // func CreateCertificates(orgPeers map[string]int) {
 // 	for orgName, peerCount := range orgPeers {
 // 		caName := fmt.Sprintf("ca-%s", orgName)
@@ -1153,65 +1188,34 @@ func createStopNetwork(domainName string) {
 // 	}
 // }
 
-// reading details from configs
-func ReadCaConfig(domainName string) {
-	// Set the file name of the configurations file
-	viper.SetConfigName("docker-compose-ca") // name of config file (without extension)
 
-	// Set the type of the configuration file
-	viper.SetConfigType("yaml")
+// func createPeercfg(domainName string) {
+// 	filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
 
-	configPath := fmt.Sprintf("./fabrix/%v/Network/docker", domainName)
-	// Set the path to look for the configurations file
-	viper.AddConfigPath(configPath) // path to look for the config file in
+// 	// Set the file you want to read
+// 	viper.SetConfigName("core")
+// 	viper.SetConfigType("yaml")
+// 	viper.AddConfigPath("pkg/configs/defaults/peercfg")
 
-	// Find and read the config file
-	err := viper.ReadInConfig()
+// 	// Read the config file
+// 	if err := viper.ReadInConfig(); err != nil {
+// 		fmt.Printf("Error reading config file, %s", err)
+// 		return
+// 	}
 
-	if err != nil { // Handle errors reading the config file
-		log.Fatalf("Error while reading config file %s", err)
-	}
+// 	// Create a new file and write the modified content
+// 	newFile, err := os.Create(filePath)
+// 	if err != nil {
+// 		fmt.Printf("Error creating file, %s", err)
+// 		return
+// 	}
+// 	defer newFile.Close()
 
-	// Getting values from the configuration file
-	hostname := viper.GetString("networks.test.name")
-	// port := viper.GetInt("port")
-	// username := viper.GetString("credentials.username")
-	// password := viper.GetString("credentials.password")
+// 	// Write the new content
+// 	if err := viper.WriteConfigAs(filePath); err != nil {
+// 		fmt.Printf("Error writing config file, %s", err)
+// 		return
+// 	}
 
-	// Printing the values
-	fmt.Printf("Hostname: %s\n", hostname)
-	// fmt.Printf("Port: %d\n", port)
-	// fmt.Printf("Username: %s\n", username)
-	// fmt.Printf("Password: %s\n", password)
-}
-
-func createPeercfg(domainName string) {
-	filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
-
-	// Set the file you want to read
-	viper.SetConfigName("core")                           // Name of the config file without extension
-	viper.SetConfigType("yaml")                           // Config file type
-	viper.AddConfigPath("./pkg/configs/defaults/peercfg") // Path to look for the config file in the current directory
-
-	// Read the config file
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading config file, %s", err)
-		return
-	}
-
-	// Create a new file and write the modified content
-	newFile, err := os.Create(filePath)
-	if err != nil {
-		fmt.Printf("Error creating file, %s", err)
-		return
-	}
-	defer newFile.Close()
-
-	// Write the new content
-	if err := viper.WriteConfigAs(filePath); err != nil {
-		fmt.Printf("Error writing config file, %s", err)
-		return
-	}
-
-	fmt.Println("Config file has been successfully modified and written to new_config.yaml")
-}
+// 	fmt.Println("Config file has been successfully modified and written to new_config.yaml")
+// }
