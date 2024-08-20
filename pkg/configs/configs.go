@@ -152,16 +152,16 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 			"FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server",
 			fmt.Sprintf("FABRIC_CA_SERVER_CA_NAME=ca-%v", org),
 			"FABRIC_CA_SERVER_TLS_ENABLED=true",
-			fmt.Sprintf("FABRIC_CA_SERVER_PORT=%v", ports[0]+i*1000),
-			fmt.Sprintf("FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:%v", ports[1]+i*1000),
+			fmt.Sprintf("FABRIC_CA_SERVER_PORT=%v", ports[0]+i*10),
+			fmt.Sprintf("FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:%v", ports[1]+i*10),
 		}
 
 		viper.Set(fmt.Sprintf("services.ca_%v.environment", org), envSlice)
 
 		//** this need to be changed since we need to add those as strings
 		portSlice := []string{
-			fmt.Sprintf("%d:%d", ports[0]+i*1000, ports[0]+i*1000),
-			fmt.Sprintf("%d:%d", ports[1]+i*1000, ports[1]+i*1000),
+			fmt.Sprintf("%d:%d", ports[0]+i*10, ports[0]+i*10),
+			fmt.Sprintf("%d:%d", ports[1]+i*10, ports[1]+i*10),
 		}
 
 		viper.Set(fmt.Sprintf("services.ca_%v.ports", org), portSlice)
@@ -193,7 +193,7 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 			Name: org,
 			Ca: CA{
 				Name: fmt.Sprintf("ca-%s", org),
-				Port: ports[0] + i*1000,
+				Port: ports[0] + i*10,
 			},
 		}
 
@@ -345,7 +345,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			custom_viper.Set(fmt.Sprintf("services:%vpeer%vdb:environment", org, peer), envCouch)
 
 			portsCouch := []string{
-				fmt.Sprintf("%v:5984", ports[0]+i*2000),
+				fmt.Sprintf("%v:5984", ports[0]+i*20),
 			}
 			custom_viper.Set(fmt.Sprintf("services:%vpeer%vdb:ports", org, peer), portsCouch)
 			custom_viper.Set(fmt.Sprintf("services:%vpeer%vdb:networks", org, peer), networkSlice)
@@ -367,13 +367,13 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 				"CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt",
 				"# Peer specific variables",
 				fmt.Sprintf("CORE_PEER_ID=peer%v.%v.%v", peer, org, domainName),
-				fmt.Sprintf("CORE_PEER_ADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
-				fmt.Sprintf("CORE_PEER_LISTENADDRESS=0.0.0.0:%v", ports[1]+i*2000),
-				fmt.Sprintf("CORE_PEER_CHAINCODEADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000+1),
+				fmt.Sprintf("CORE_PEER_ADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*20),
+				fmt.Sprintf("CORE_PEER_LISTENADDRESS=0.0.0.0:%v", ports[1]+i*20),
+				fmt.Sprintf("CORE_PEER_CHAINCODEADDRESS=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*20+1),
 
-				fmt.Sprintf("CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:%v", ports[1]+i*2000+1),
-				fmt.Sprintf("CORE_PEER_GOSSIP_BOOTSTRAP=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
-				fmt.Sprintf("CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*2000),
+				fmt.Sprintf("CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:%v", ports[1]+i*20+1),
+				fmt.Sprintf("CORE_PEER_GOSSIP_BOOTSTRAP=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*20),
+				fmt.Sprintf("CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer%v.%v.%v:%v", peer, org, domainName, ports[1]+i*20),
 
 				fmt.Sprintf("CORE_PEER_LOCALMSPID=%v", orgMSP),
 				"CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp",
@@ -400,7 +400,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:working_dir", peer, org, domainName), "/root")
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:command", peer, org, domainName), "peer node start")
 			peerPorts := []string{
-				fmt.Sprintf("%v:%v", ports[1]+i*2000, ports[1]+i*2000),
+				fmt.Sprintf("%v:%v", ports[1]+i*20, ports[1]+i*20),
 				fmt.Sprintf("%v:%v", ports[2]+i*1, ports[2]+i*1),
 			}
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:ports", peer, org, domainName), peerPorts)
@@ -431,9 +431,9 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 			// info for orgs peer details
 			orgPeer := Peer{
 				Name:        fmt.Sprintf("peer%v.%v.%v", peer, org, domainName),
-				Port:        ports[1] + i*2000,
+				Port:        ports[1] + i*20,
 				CouchDbName: fmt.Sprintf("%vpeer%vdb", org, peer),
-				CouchDbPort: ports[0] + i*2000,
+				CouchDbPort: ports[0] + i*20,
 			}
 
 			peerList = append(peerList, orgPeer)
@@ -1065,8 +1065,8 @@ func appendToScriptFile(content string, filePath string) error {
 
 func createStopNetwork(domainName string) {
 	filePath := fmt.Sprintf("./fabrix/%v/Network/stopNetwork.sh", domainName)
-	scriptContent0 := 
-	`
+	scriptContent0 :=
+		`
 	#!/bin/bash
 
 	docker compose -f docker/docker-compose-orgs.yaml down
@@ -1103,350 +1103,6 @@ func createStopNetwork(domainName string) {
 	}
 }
 
-func createPeercfg(domainName string) {
-
-	// Define the directory and file path
-	filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
-
-	// Define the content for the YAML file
-	yamlContent := `
-###############################################################################
-#
-#    Peer section
-#
-###############################################################################
-peer:
-  id: jdoe
-  networkId: dev
-  listenAddress: 0.0.0.0:7051
-  address: 0.0.0.0:7051
-  addressAutoDetect: false
-  gateway:
-    enabled: true
-    endorsementTimeout: 30s
-    broadcastTimeout: 30s
-    dialTimeout: 2m
-
-  keepalive:
-    interval: 7200s
-    timeout: 20s
-    minInterval: 60s
-    client:
-      interval: 60s
-      timeout: 20s
-    deliveryClient:
-      interval: 60s
-      timeout: 20s
-
-  gossip:
-    bootstrap: 127.0.0.1:7051
-    useLeaderElection: false
-    orgLeader: true
-
-    membershipTrackerInterval: 5s
-    endpoint:
-    maxBlockCountToStore: 10
-    maxPropagationBurstLatency: 10ms
-    maxPropagationBurstSize: 10
-    propagateIterations: 1
-    propagatePeerNum: 3
-    pullInterval: 4s
-    pullPeerNum: 3
-    requestStateInfoInterval: 4s
-    publishStateInfoInterval: 4s
-    stateInfoRetentionInterval:
-    publishCertPeriod: 10s
-    skipBlockVerification: false
-    dialTimeout: 3s
-    connTimeout: 2s
-    recvBuffSize: 20
-    sendBuffSize: 200
-    digestWaitTime: 1s
-    requestWaitTime: 1500ms
-    responseWaitTime: 2s
-    aliveTimeInterval: 5s
-    aliveExpirationTimeout: 25s
-    reconnectInterval: 25s
-    maxConnectionAttempts: 120
-    msgExpirationFactor: 20
-    externalEndpoint:
-    election:
-      startupGracePeriod: 15s
-      membershipSampleInterval: 1s
-      leaderAliveThreshold: 10s
-      leaderElectionDuration: 5s
-
-    pvtData:
-      pullRetryThreshold: 60s
-
-      transientstoreMaxBlockRetention: 1000
-      pushAckTimeout: 3s
-      btlPullMargin: 10
-      reconcileBatchSize: 10
-
-      reconcileSleepInterval: 1m
-      reconciliationEnabled: true
-      skipPullingInvalidTransactionsDuringCommit: false
-      implicitCollectionDisseminationPolicy:
-        requiredPeerCount: 0
-        maxPeerCount: 1
-
-    state:
-      enabled: false
-      checkInterval: 10s
-
-      responseTimeout: 3s
-      batchSize: 10
-      blockBufferSize: 20
-      maxRetries: 3
-
-  tls:
-    enabled: false
-
-    clientAuthRequired: false
-    cert:
-      file: tls/server.crt
-    key:
-      file: tls/server.key
-    rootcert:
-      file: tls/ca.crt
-    clientRootCAs:
-      files:
-        - tls/ca.crt
-
-    clientKey:
-      file:
-    clientCert:
-      file:
-  authentication:
-    timewindow: 15m
-  fileSystemPath: /var/hyperledger/production
-
-  BCCSP:
-    Default: SW
-    SW:
-      Hash: SHA2
-      Security: 256
-      FileKeyStore:
-        KeyStore:
-    PKCS11:
-      Library:
-      Label:
-      Pin:
-      Hash:
-      Security:
-      SoftwareVerify:
-      Immutable:
-      AltID:
-      KeyIds:
-  mspConfigPath: msp
-  localMspId: SampleOrg
-
-  client:
-    connTimeout: 3s
-
-  deliveryclient:
-    blockGossipEnabled: true
-    reconnectTotalTimeThreshold: 3600s
-    connTimeout: 3s
-    reConnectBackoffThreshold: 3600s
-    addressOverrides:
-  localMspType: bccsp
-  profile:
-    enabled: false
-    listenAddress: 0.0.0.0:6060
-  handlers:
-    authFilters:
-      - name: DefaultAuth
-      - name: ExpirationCheck
-    decorators:
-      - name: DefaultDecorator
-    endorsers:
-      escc:
-        name: DefaultEndorsement
-        library:
-    validators:
-      vscc:
-        name: DefaultValidation
-        library:
-
-  validatorPoolSize:
-
-  discovery:
-    enabled: true
-    authCacheEnabled: true
-    authCacheMaxSize: 1000
-    authCachePurgeRetentionRatio: 0.75
-    orgMembersAllowedAccess: false
-
-  limits:
-    concurrency:
-      endorserService: 2500
-      deliverService: 2500
-      gatewayService: 500
-
-  maxRecvMsgSize: 104857600
-  maxSendMsgSize: 104857600
-
-###############################################################################
-#
-#    VM section
-#
-###############################################################################
-vm:
-  endpoint: unix:///var/run/docker.sock
-
-  docker:
-    tls:
-      enabled: false
-      ca:
-        file: docker/ca.crt
-      cert:
-        file: docker/tls.crt
-      key:
-        file: docker/tls.key
-
-    attachStdout: false
-
-    hostConfig:
-      NetworkMode: host
-      Dns:
-      LogConfig:
-        Type: json-file
-        Config:
-          max-size: "50m"
-          max-file: "5"
-      Memory: 2147483648
-
-###############################################################################
-#
-#    Chaincode section
-#
-###############################################################################
-chaincode:
-  id:
-    path:
-    name:
-  builder: $(DOCKER_NS)/fabric-ccenv:$(TWO_DIGIT_VERSION)
-  pull: false
-  golang:
-    runtime: $(DOCKER_NS)/fabric-baseos:$(TWO_DIGIT_VERSION)
-    dynamicLink: false
-  java:
-    runtime: $(DOCKER_NS)/fabric-javaenv:$(TWO_DIGIT_VERSION)
-  node:
-    runtime: $(DOCKER_NS)/fabric-nodeenv:$(TWO_DIGIT_VERSION)
-  externalBuilders:
-    - name: ccaas_builder
-      path: /opt/hyperledger/ccaas_builder
-      propagateEnvironment:
-        - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG
-
-  installTimeout: 300s
-  startuptimeout: 300s
-
-  executetimeout: 30s
-  mode: net
-  keepalive: 0
-  system:
-    _lifecycle: enable
-    cscc: enable
-    lscc: enable
-    qscc: enable
-
-  logging:
-    level: info
-    shim: warning
-    format: "%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
-
-###############################################################################
-#
-#    Ledger section - ledger configuration encompasses both the blockchain
-#    and the state
-#
-###############################################################################
-ledger:
-  blockchain:
-
-  state:
-    stateDatabase: goleveldb
-    totalQueryLimit: 100000
-    couchDBConfig:
-      couchDBAddress: 127.0.0.1:5984
-      username:
-      password:
-      maxRetries: 3
-      maxRetriesOnStartup: 10
-      requestTimeout: 35s
-      internalQueryLimit: 1000
-      maxBatchUpdateSize: 1000
-      createGlobalChangesDB: false
-      cacheSize: 64
-  history:
-    enableHistoryDatabase: true
-  pvtdataStore:
-    collElgProcMaxDbBatchSize: 5000
-    collElgProcDbBatchesInterval: 1000
-    deprioritizedDataReconcilerInterval: 60m
-    purgeInterval: 100
-    purgedKeyAuditLogging: true
-
-  snapshots:
-    rootDir: /var/hyperledger/production/snapshots
-
-###############################################################################
-#
-#    Operations section
-#
-###############################################################################
-operations:
-  listenAddress: 127.0.0.1:9443
-
-  tls:
-    enabled: false
-
-    cert:
-      file:
-
-    key:
-      file:
-
-    clientAuthRequired: false
-
-    clientRootCAs:
-      files: []
-
-###############################################################################
-#
-#    Metrics section
-#
-###############################################################################
-metrics:
-  provider: disabled
-
-  statsd:
-    network: udp
-    address: 127.0.0.1:8125
-    writeInterval: 10s
-    prefix:`
-
-	// Create or open the YAML file
-	file, err := os.Create(filePath)
-	if err != nil {
-		fmt.Printf("Error creating file: %v\n", err)
-		return
-	}
-	defer file.Close()
-
-	// Write the content to the file
-	_, err = file.WriteString(yamlContent)
-	if err != nil {
-		fmt.Printf("Error writing to file: %v\n", err)
-		return
-	}
-
-	fmt.Printf("YAML file created successfully at %s\n", filePath)
-}
 
 // func CreateCertificates(orgPeers map[string]int) {
 // 	for orgName, peerCount := range orgPeers {
@@ -1527,4 +1183,35 @@ func ReadCaConfig(domainName string) {
 	// fmt.Printf("Port: %d\n", port)
 	// fmt.Printf("Username: %s\n", username)
 	// fmt.Printf("Password: %s\n", password)
+}
+
+func createPeercfg(domainName string) {
+	filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
+
+	// Set the file you want to read
+	viper.SetConfigName("core")                           // Name of the config file without extension
+	viper.SetConfigType("yaml")                           // Config file type
+	viper.AddConfigPath("./pkg/configs/defaults/peercfg") // Path to look for the config file in the current directory
+
+	// Read the config file
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Printf("Error reading config file, %s", err)
+		return
+	}
+
+	// Create a new file and write the modified content
+	newFile, err := os.Create(filePath)
+	if err != nil {
+		fmt.Printf("Error creating file, %s", err)
+		return
+	}
+	defer newFile.Close()
+
+	// Write the new content
+	if err := viper.WriteConfigAs(filePath); err != nil {
+		fmt.Printf("Error writing config file, %s", err)
+		return
+	}
+
+	fmt.Println("Config file has been successfully modified and written to new_config.yaml")
 }
