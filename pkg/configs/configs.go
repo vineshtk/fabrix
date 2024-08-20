@@ -63,7 +63,8 @@ func CreateConfigs(domainName string, orgPeers map[string]int) {
 	CreateConfigTx(domainName, orgPeers)
 	CreateRegisterEnroll(domainName, orgPeers)
 	CreateStartNetwork(domainName, orgPeers)
-	// CreateCertificates(orgPeers)
+	createStopNetwork(domainName)
+	createPeercfg(domainName)
 	// ReadCaConfig(domainName)
 }
 
@@ -610,9 +611,11 @@ func CreateFolders(domainName string) {
 	}
 	folder1 := fmt.Sprintf("fabrix/%v/Network/config", domainName)
 	folder2 := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
+	folder3 := fmt.Sprintf("fabrix/%v/Network/peercfg", domainName)
 	// Create the full path for the new folder
 	folderPath1 := filepath.Join(cwd, folder1)
 	folderPath2 := filepath.Join(cwd, folder2)
+	folderPath3 := filepath.Join(cwd, folder3)
 
 	// Create the folder
 	err = os.MkdirAll(folderPath1, os.ModePerm)
@@ -622,6 +625,13 @@ func CreateFolders(domainName string) {
 	}
 	// Create the folder
 	err = os.MkdirAll(folderPath2, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating folder:", err)
+		return
+	}
+
+	// Create the folder
+	err = os.MkdirAll(folderPath3, os.ModePerm)
 	if err != nil {
 		fmt.Println("Error creating folder:", err)
 		return
@@ -911,7 +921,6 @@ sleep 2
 
 export FABRIC_CFG_PATH=${PWD}/peercfg
 export CORE_PEER_TLS_ENABLED=true
-
 	`, domainName)
 
 	if err := appendToScriptFile(scriptContent0, filePath); err != nil {
@@ -925,7 +934,6 @@ export CORE_PEER_TLS_ENABLED=true
 		orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
 		upperOrg := strings.ToUpper(org)
 		scriptContent1 := fmt.Sprintf(`
-
 	#Define dynamic variables
 	export ORG_NAME_DOMAIN="%s.%s"
 	export ORG_NAME="%s"
@@ -945,7 +953,6 @@ export CORE_PEER_TLS_ENABLED=true
 				scriptContent2 := fmt.Sprintf(`export PEER="peer%v" 
 	export PEER_PORT=%d
 	export ORG_CAP="%s"
-	
 	export CORE_PEER_LOCALMSPID=${ORG_MSP} 
 	export CORE_PEER_ADDRESS=localhost:${PEER_PORT} 
 	export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/${ORG_NAME_DOMAIN}/peers/${PEER}.${ORG_NAME_DOMAIN}/tls/ca.crt
@@ -969,7 +976,7 @@ export CORE_PEER_TLS_ENABLED=true
 	jq '.data.data[0].payload.data.config' config_block.json > config.json
 	cp config.json config_copy.json
 
-jq ".channel_group.groups.Application.groups.${ORG_MSP}.values += {AnchorPeers:{mod_policy: \"Admins\",\"value\":{\"anchor_peers\": [{\"host\": \"${PEER}.${ORG_NAME_DOMAIN}\",\"port\": ${PEER_PORT}}]},\"version\": \"0\"}}" config_copy.json > modified_config.json
+	jq ".channel_group.groups.Application.groups.${ORG_MSP}.values += {AnchorPeers:{mod_policy: \"Admins\",\"value\":{\"anchor_peers\": [{\"host\": \"${PEER}.${ORG_NAME_DOMAIN}\",\"port\": ${PEER_PORT}}]},\"version\": \"0\"}}" config_copy.json > modified_config.json
 
 	configtxlator proto_encode --input config.json --type common.Config --output config.pb
 	configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
@@ -1054,6 +1061,391 @@ func appendToScriptFile(content string, filePath string) error {
 	// }
 
 	return nil
+}
+
+func createStopNetwork(domainName string) {
+	filePath := fmt.Sprintf("./fabrix/%v/Network/stopNetwork.sh", domainName)
+	scriptContent0 := 
+	`
+	#!/bin/bash
+
+	docker compose -f docker/docker-compose-orgs.yaml down
+	sleep 2
+
+	docker compose -f docker/docker-compose-ca.yaml down
+	sleep 2
+
+	docker rm -f $(docker ps -a | awk '($2 ~ /dev-peer.*/) {print $1}')
+
+	docker volume rm $(docker volume ls -q)
+
+	rm -rf channel-artifacts/
+	rm chaincode.tar.gz
+	rm -rf organizations/
+
+	docker ps -a
+
+	docker rm $(docker container ls -q) --force
+
+	yes | docker container prune
+
+	yes | docker system prune
+
+	yes | docker volume prune
+
+	yes | docker network prune
+
+	`
+
+	if err := appendToScriptFile(scriptContent0, filePath); err != nil {
+		fmt.Println("Error appending to script file:", err)
+		return
+	}
+}
+
+func createPeercfg(domainName string) {
+
+	// Define the directory and file path
+	filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
+
+	// Define the content for the YAML file
+	yamlContent := `
+###############################################################################
+#
+#    Peer section
+#
+###############################################################################
+peer:
+  id: jdoe
+  networkId: dev
+  listenAddress: 0.0.0.0:7051
+  address: 0.0.0.0:7051
+  addressAutoDetect: false
+  gateway:
+    enabled: true
+    endorsementTimeout: 30s
+    broadcastTimeout: 30s
+    dialTimeout: 2m
+
+  keepalive:
+    interval: 7200s
+    timeout: 20s
+    minInterval: 60s
+    client:
+      interval: 60s
+      timeout: 20s
+    deliveryClient:
+      interval: 60s
+      timeout: 20s
+
+  gossip:
+    bootstrap: 127.0.0.1:7051
+    useLeaderElection: false
+    orgLeader: true
+
+    membershipTrackerInterval: 5s
+    endpoint:
+    maxBlockCountToStore: 10
+    maxPropagationBurstLatency: 10ms
+    maxPropagationBurstSize: 10
+    propagateIterations: 1
+    propagatePeerNum: 3
+    pullInterval: 4s
+    pullPeerNum: 3
+    requestStateInfoInterval: 4s
+    publishStateInfoInterval: 4s
+    stateInfoRetentionInterval:
+    publishCertPeriod: 10s
+    skipBlockVerification: false
+    dialTimeout: 3s
+    connTimeout: 2s
+    recvBuffSize: 20
+    sendBuffSize: 200
+    digestWaitTime: 1s
+    requestWaitTime: 1500ms
+    responseWaitTime: 2s
+    aliveTimeInterval: 5s
+    aliveExpirationTimeout: 25s
+    reconnectInterval: 25s
+    maxConnectionAttempts: 120
+    msgExpirationFactor: 20
+    externalEndpoint:
+    election:
+      startupGracePeriod: 15s
+      membershipSampleInterval: 1s
+      leaderAliveThreshold: 10s
+      leaderElectionDuration: 5s
+
+    pvtData:
+      pullRetryThreshold: 60s
+
+      transientstoreMaxBlockRetention: 1000
+      pushAckTimeout: 3s
+      btlPullMargin: 10
+      reconcileBatchSize: 10
+
+      reconcileSleepInterval: 1m
+      reconciliationEnabled: true
+      skipPullingInvalidTransactionsDuringCommit: false
+      implicitCollectionDisseminationPolicy:
+        requiredPeerCount: 0
+        maxPeerCount: 1
+
+    state:
+      enabled: false
+      checkInterval: 10s
+
+      responseTimeout: 3s
+      batchSize: 10
+      blockBufferSize: 20
+      maxRetries: 3
+
+  tls:
+    enabled: false
+
+    clientAuthRequired: false
+    cert:
+      file: tls/server.crt
+    key:
+      file: tls/server.key
+    rootcert:
+      file: tls/ca.crt
+    clientRootCAs:
+      files:
+        - tls/ca.crt
+
+    clientKey:
+      file:
+    clientCert:
+      file:
+  authentication:
+    timewindow: 15m
+  fileSystemPath: /var/hyperledger/production
+
+  BCCSP:
+    Default: SW
+    SW:
+      Hash: SHA2
+      Security: 256
+      FileKeyStore:
+        KeyStore:
+    PKCS11:
+      Library:
+      Label:
+      Pin:
+      Hash:
+      Security:
+      SoftwareVerify:
+      Immutable:
+      AltID:
+      KeyIds:
+  mspConfigPath: msp
+  localMspId: SampleOrg
+
+  client:
+    connTimeout: 3s
+
+  deliveryclient:
+    blockGossipEnabled: true
+    reconnectTotalTimeThreshold: 3600s
+    connTimeout: 3s
+    reConnectBackoffThreshold: 3600s
+    addressOverrides:
+  localMspType: bccsp
+  profile:
+    enabled: false
+    listenAddress: 0.0.0.0:6060
+  handlers:
+    authFilters:
+      - name: DefaultAuth
+      - name: ExpirationCheck
+    decorators:
+      - name: DefaultDecorator
+    endorsers:
+      escc:
+        name: DefaultEndorsement
+        library:
+    validators:
+      vscc:
+        name: DefaultValidation
+        library:
+
+  validatorPoolSize:
+
+  discovery:
+    enabled: true
+    authCacheEnabled: true
+    authCacheMaxSize: 1000
+    authCachePurgeRetentionRatio: 0.75
+    orgMembersAllowedAccess: false
+
+  limits:
+    concurrency:
+      endorserService: 2500
+      deliverService: 2500
+      gatewayService: 500
+
+  maxRecvMsgSize: 104857600
+  maxSendMsgSize: 104857600
+
+###############################################################################
+#
+#    VM section
+#
+###############################################################################
+vm:
+  endpoint: unix:///var/run/docker.sock
+
+  docker:
+    tls:
+      enabled: false
+      ca:
+        file: docker/ca.crt
+      cert:
+        file: docker/tls.crt
+      key:
+        file: docker/tls.key
+
+    attachStdout: false
+
+    hostConfig:
+      NetworkMode: host
+      Dns:
+      LogConfig:
+        Type: json-file
+        Config:
+          max-size: "50m"
+          max-file: "5"
+      Memory: 2147483648
+
+###############################################################################
+#
+#    Chaincode section
+#
+###############################################################################
+chaincode:
+  id:
+    path:
+    name:
+  builder: $(DOCKER_NS)/fabric-ccenv:$(TWO_DIGIT_VERSION)
+  pull: false
+  golang:
+    runtime: $(DOCKER_NS)/fabric-baseos:$(TWO_DIGIT_VERSION)
+    dynamicLink: false
+  java:
+    runtime: $(DOCKER_NS)/fabric-javaenv:$(TWO_DIGIT_VERSION)
+  node:
+    runtime: $(DOCKER_NS)/fabric-nodeenv:$(TWO_DIGIT_VERSION)
+  externalBuilders:
+    - name: ccaas_builder
+      path: /opt/hyperledger/ccaas_builder
+      propagateEnvironment:
+        - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG
+
+  installTimeout: 300s
+  startuptimeout: 300s
+
+  executetimeout: 30s
+  mode: net
+  keepalive: 0
+  system:
+    _lifecycle: enable
+    cscc: enable
+    lscc: enable
+    qscc: enable
+
+  logging:
+    level: info
+    shim: warning
+    format: "%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
+
+###############################################################################
+#
+#    Ledger section - ledger configuration encompasses both the blockchain
+#    and the state
+#
+###############################################################################
+ledger:
+  blockchain:
+
+  state:
+    stateDatabase: goleveldb
+    totalQueryLimit: 100000
+    couchDBConfig:
+      couchDBAddress: 127.0.0.1:5984
+      username:
+      password:
+      maxRetries: 3
+      maxRetriesOnStartup: 10
+      requestTimeout: 35s
+      internalQueryLimit: 1000
+      maxBatchUpdateSize: 1000
+      createGlobalChangesDB: false
+      cacheSize: 64
+  history:
+    enableHistoryDatabase: true
+  pvtdataStore:
+    collElgProcMaxDbBatchSize: 5000
+    collElgProcDbBatchesInterval: 1000
+    deprioritizedDataReconcilerInterval: 60m
+    purgeInterval: 100
+    purgedKeyAuditLogging: true
+
+  snapshots:
+    rootDir: /var/hyperledger/production/snapshots
+
+###############################################################################
+#
+#    Operations section
+#
+###############################################################################
+operations:
+  listenAddress: 127.0.0.1:9443
+
+  tls:
+    enabled: false
+
+    cert:
+      file:
+
+    key:
+      file:
+
+    clientAuthRequired: false
+
+    clientRootCAs:
+      files: []
+
+###############################################################################
+#
+#    Metrics section
+#
+###############################################################################
+metrics:
+  provider: disabled
+
+  statsd:
+    network: udp
+    address: 127.0.0.1:8125
+    writeInterval: 10s
+    prefix:`
+
+	// Create or open the YAML file
+	file, err := os.Create(filePath)
+	if err != nil {
+		fmt.Printf("Error creating file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	// Write the content to the file
+	_, err = file.WriteString(yamlContent)
+	if err != nil {
+		fmt.Printf("Error writing to file: %v\n", err)
+		return
+	}
+
+	fmt.Printf("YAML file created successfully at %s\n", filePath)
 }
 
 // func CreateCertificates(orgPeers map[string]int) {
