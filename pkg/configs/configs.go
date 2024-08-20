@@ -926,7 +926,7 @@ export CORE_PEER_TLS_ENABLED=true
 		upperOrg := strings.ToUpper(org)
 		scriptContent1 := fmt.Sprintf(`
 
-	//  Define dynamic variables
+	#Define dynamic variables
 	export ORG_NAME_DOMAIN="%s.%s"
 	export ORG_NAME="%s"
 	export ORG_MSP="%s"
@@ -969,7 +969,7 @@ export CORE_PEER_TLS_ENABLED=true
 	jq '.data.data[0].payload.data.config' config_block.json > config.json
 	cp config.json config_copy.json
 
-	jq '.channel_group.groups.Application.groups.${ORG_MSP}.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "${PEER}.${ORG_NAME_DOMAIN}","port": ${PEER_PORT}}]},"version": "0"}}' config_copy.json > modified_config.json
+jq ".channel_group.groups.Application.groups.${ORG_MSP}.values += {AnchorPeers:{mod_policy: \"Admins\",\"value\":{\"anchor_peers\": [{\"host\": \"${PEER}.${ORG_NAME_DOMAIN}\",\"port\": ${PEER_PORT}}]},\"version\": \"0\"}}" config_copy.json > modified_config.json
 
 	configtxlator proto_encode --input config.json --type common.Config --output config.pb
 	configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
@@ -996,12 +996,14 @@ export CORE_PEER_TLS_ENABLED=true
 
 	peer lifecycle chaincode queryinstalled
 
+	export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid chaincode.tar.gz)
+
 	echo "—---------------Approve chaincode in ${ORG_NAME} peer—-------------"
 
 	peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --collections-config ../Chaincode/collection.json --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
-	sleep 1}
+	sleep 1
 
-		`,j, peerPort, upperOrg)
+		`, j, peerPort, upperOrg)
 
 				if err := appendToScriptFile(scriptContent2, filePath); err != nil {
 					fmt.Println("Error appending to script file:", err)
