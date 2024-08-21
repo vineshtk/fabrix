@@ -47,7 +47,7 @@ func (o *OrderContract) CreateOrder(ctx contractapi.TransactionContextInterface,
 	}
 
 	if clientOrgID == "DealerMSP" {
-	// if clientOrgID == "Org2MSP" {
+		// if clientOrgID == "Org2MSP" {
 		//if clientOrgID == "dealer-auto-com" {
 		exists, err := o.OrderExists(ctx, orderID)
 		if err != nil {
@@ -137,7 +137,7 @@ func (o *OrderContract) DeleteOrder(ctx contractapi.TransactionContextInterface,
 		return fmt.Errorf("could not read the client identity. %s", err)
 	}
 	if clientOrgID == "DealerMSP" {
-	// if clientOrgID == "Org2MSP" {
+		// if clientOrgID == "Org2MSP" {
 		//if clientOrgID == "dealer-auto-com" {
 
 		exists, err := o.OrderExists(ctx, orderID)

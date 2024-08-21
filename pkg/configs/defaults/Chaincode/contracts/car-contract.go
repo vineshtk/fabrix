@@ -56,7 +56,7 @@ func (c *CarContract) CreateCar(ctx contractapi.TransactionContextInterface, car
 	}
 
 	if clientOrgID == "ManufacturerMSP" {
-	// if clientOrgID == "Org1MSP" {
+		// if clientOrgID == "Org1MSP" {
 		//if clientOrgID == "manufacturer-auto-com" {
 
 		exists, err := c.CarExists(ctx, carID)
@@ -121,7 +121,7 @@ func (c *CarContract) DeleteCar(ctx contractapi.TransactionContextInterface, car
 		return "", fmt.Errorf("could not fetch client identity. %s", err)
 	}
 	if clientOrgID == "ManufacturerMSP" {
-	// if clientOrgID == "Org1MSP" {
+		// if clientOrgID == "Org1MSP" {
 		//if clientOrgID == "manufacturer-auto-com" {
 
 		exists, err := c.CarExists(ctx, carID)
@@ -316,7 +316,7 @@ func (c *CarContract) RegisterCar(ctx contractapi.TransactionContextInterface, c
 	}
 
 	if clientOrgID == "MvdMSP" {
-	// if clientOrgID == "Org3MSP" {
+		// if clientOrgID == "Org3MSP" {
 		//if clientOrgID == "mvd-auto-com" {
 
 		car, _ := c.ReadCar(ctx, carID)
