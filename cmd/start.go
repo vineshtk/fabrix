@@ -19,8 +19,8 @@ and usage of using your command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		scriptPath := fmt.Sprintf("./fabrix/%v/Network/startNetwork.sh", args[0])
-        scriptDir := fmt.Sprintf("./fabrix/%v/Network/", args[0])
-		
+		scriptDir := fmt.Sprintf("./fabrix/%v/Network/", args[0])
+
 		err := os.Chmod(scriptPath, 0755)
 		if err != nil {
 			fmt.Printf("Error making script executable: %v\n", err)
@@ -28,7 +28,7 @@ and usage of using your command.`,
 		}
 
 		command := exec.Command("/bin/bash", "startNetwork.sh")
-        command.Dir = scriptDir
+		command.Dir = scriptDir
 		command.Stdout = os.Stdout
 		command.Stderr = os.Stderr
 
@@ -38,7 +38,7 @@ and usage of using your command.`,
 			return
 		}
 
-		fmt.Println("Script executed successfully!")
+		fmt.Println("Network started successfully!")
 	},
 }
 

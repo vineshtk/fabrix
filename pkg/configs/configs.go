@@ -69,7 +69,7 @@ func CreateConfigs(domainName string, orgPeers map[string]int) {
 	CreateRegisterEnroll(domainName, orgPeers)
 	CreateStartNetwork(domainName, orgPeers)
 	createStopNetwork(domainName)
-	
+
 	// ReadCaConfig(domainName)
 }
 
@@ -945,7 +945,7 @@ export CORE_PEER_TLS_ENABLED=true
 	export ORG_MSP="%s"
 	`, org, domainName, org, orgMSP)
 
-		if err := appendToScriptFile(scriptContent1, filePath); err != nil {
+		if err :=     appendToScriptFile(scriptContent1, filePath); err != nil {
 			fmt.Println("Error appending to script file:", err)
 			return
 		}
@@ -1110,33 +1110,30 @@ func createStopNetwork(domainName string) {
 	fmt.Println("Successfully created stopNetwork.sh")
 }
 
-
 func createPeercfg(domainName string) {
 
-    filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
+	filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
 
-    if err := os.MkdirAll(fmt.Sprintf("./fabrix/%v/Network/peercfg", domainName), os.ModePerm); err != nil {
-        fmt.Printf("Error creating directories, %s\n", err)
-        return
-    }
+	if err := os.MkdirAll(fmt.Sprintf("./fabrix/%v/Network/peercfg", domainName), os.ModePerm); err != nil {
+		fmt.Printf("Error creating directories, %s\n", err)
+		return
+	}
 
-    newFile, err := os.Create(filePath)
-    if err != nil {
-        fmt.Printf("Error creating file, %s\n", err)
-        return
-    }
-    defer newFile.Close()
+	newFile, err := os.Create(filePath)
+	if err != nil {
+		fmt.Printf("Error creating file, %s\n", err)
+		return
+	}
+	defer newFile.Close()
 
-    _, err = newFile.Write(coreYaml)
-    if err != nil {
-        fmt.Printf("Error writing to file, %s\n", err)
-        return
-    }
+	_, err = newFile.Write(coreYaml)
+	if err != nil {
+		fmt.Printf("Error writing to file, %s\n", err)
+		return
+	}
 
-    fmt.Println("successfully created core.yaml")
+	fmt.Println("successfully created core.yaml")
 }
-
-
 
 // these are for future works
 // func CreateCertificates(orgPeers map[string]int) {
@@ -1187,7 +1184,6 @@ func createPeercfg(domainName string) {
 // 		}
 // 	}
 // }
-
 
 // func createPeercfg(domainName string) {
 // 	filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)

@@ -19,7 +19,7 @@ var rootCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		// Show help if no arguments or flags are passed
-		
+
 		if len(args) == 0 {
 			cmd.Help()
 			os.Exit(0)

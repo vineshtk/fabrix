@@ -27,7 +27,7 @@ and usage of using your command.`,
 		// List directories
 		for i, entry := range entries {
 			if entry.IsDir() {
-				fmt.Println(i,".", entry.Name())
+				fmt.Println(i, ".", entry.Name())
 			}
 		}
 

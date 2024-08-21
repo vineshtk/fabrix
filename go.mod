@@ -1,4 +1,4 @@
-module github/vineshtk/fabrix
+module github.com/vineshtk/fabrix
 
 go 1.22.5
 

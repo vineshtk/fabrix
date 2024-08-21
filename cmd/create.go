@@ -19,7 +19,6 @@ and usage of using your command.`,
 	},
 }
 
-
 func init() {
 	rootCmd.AddCommand(networkCmd)
 	// networkCmd.PersistentFlags().String("foo", "", "A help for foo")
