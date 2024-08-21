@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github/vineshtk/fabrix/pkg/menu"
+	"github.com/vineshtk/fabrix/pkg/menu"
 
 	"github.com/spf13/cobra"
 )

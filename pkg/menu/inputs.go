@@ -3,10 +3,11 @@ package menu
 import (
 	"bufio"
 	"fmt"
-	"github/vineshtk/fabrix/pkg/configs"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/vineshtk/fabrix/pkg/configs"
 )
 
 func GetInputsFromUser() {

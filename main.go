@@ -1,6 +1,6 @@
 package main
 
-import "github/vineshtk/fabrix/cmd"
+import "github.com/vineshtk/fabrix/cmd"
 
 func main() {
 	cmd.Execute()
