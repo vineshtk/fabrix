@@ -147,7 +147,7 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 
 	// create configs for all the organisations
 	for _, org := range keys {
-		fmt.Println("this is range order at CA", org)
+		// fmt.Println("this is range order at CA", org)
 		org := strings.ToLower(org)
 		viper.Set(fmt.Sprintf("services.ca_%v.image", org), "hyperledger/fabric-ca:1.5.7")
 		viper.Set(fmt.Sprintf("services.ca_%v.labels.service", org), "hyperledger-fabric")
@@ -331,7 +331,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 	// creating couchdb and peers for all the orgs
 	for index, org := range keys {
 		peers := orgPeers[org]
-		fmt.Println("this is range order", org)
+		// fmt.Println("this is range order", org)
 		org := strings.ToLower(org)
 		orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
 		peerList := []Peer{}
@@ -1058,13 +1058,6 @@ func appendToScriptFile(content string, filePath string) error {
 	if _, err := file.WriteString(content); err != nil {
 		return err
 	}
-
-	// Make the script executable (optional)
-	// err = os.Chmod(filePath, 0755)
-	// if err != nil {
-	// 	fmt.Println("Error setting executable permissions:", err)
-	// 	return err
-	// }
 
 	return nil
 }

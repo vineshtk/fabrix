@@ -2,21 +2,26 @@ package menu
 
 import (
 	"fmt"
+
+	"github.com/fatih/color"
 )
 
 func ShowMainMenu() {
-	fmt.Println("Welcome to Fabrix - The helper tool for chaincode developers to create fabric network, it does all the heavy lifting for you!!!")
-	fmt.Println("You will be guided during throughout the process. Let's start...")
+
+	asciiArt := " _____     _          _      \n" +
+		"|  ___|_ _| |__  _ __(_)_  __\n" +
+		"| |_ / _' | '_ \\| '__| \\ \\/ /\n" +
+		"|  _| (_| | |_) | |  | |>  < \n" +
+		"|_|  \\__,_|_.__/|_|  |_/_/\\_\\\n"
+
 	fmt.Print("\n\n")
-	fmt.Println("MENU")
-	fmt.Println("N - New network")
-	fmt.Println("S - Select an existing network")
-	fmt.Println("D - Docker status")
-	fmt.Println("C - Clean all Docker resources")
-	fmt.Println("Q - Quit")
+	color.Blue(asciiArt)
 	fmt.Print("\n")
-	fmt.Print("Please select from the options: N, S, D, C, Q : ")
 
-	// color.Cyan("Hello, this text is in cyan!")
+	color.Green("The helper tool for chaincode developers to create fabric network, it does all the heavy lifting for you!!!")
+	color.Green("You will be guided throughout the process.")
+	color.Green("Prompt will ask you to give all the details of your network, please provide details acordingly.")
+	color.Yellow("Let's start...")
 
+	fmt.Print("\n")
 }

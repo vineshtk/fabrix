@@ -14,8 +14,7 @@ func GetInputsFromUser() {
 	fmt.Print("\n")
 	domainName := ""
 	fmt.Println("Enter the domain name: ")
-	fmt.Scan(&domainName)
-	fmt.Print("\n")
+	fmt.Scanln(&domainName)
 	fmt.Print("Enter the number of organizations: ")
 	numOrganizations, err := getInputAsInt()
 	if err != nil || numOrganizations <= 0 {
