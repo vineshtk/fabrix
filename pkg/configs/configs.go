@@ -60,16 +60,15 @@ var keys []string
 //go:embed defaults/peercfg/core.yaml
 var coreYaml []byte
 
-func CreateConfigs(domainName string, orgPeers map[string]int) {
+func CreateConfigs(domainName string, orgPeers map[string]int, channelName string) {
 	CreateFolders(domainName)
 	CreateDockerComposeCA(domainName, orgPeers)
 	CreateDockerComposeMembers(domainName, orgPeers)
 	CreateConfigTx(domainName, orgPeers)
 	createPeercfg(domainName)
 	CreateRegisterEnroll(domainName, orgPeers)
-	CreateStartNetwork(domainName, orgPeers)
+	CreateStartNetwork(domainName, orgPeers, channelName)
 	createStopNetwork(domainName)
-
 	// ReadCaConfig(domainName)
 }
 
@@ -607,6 +606,46 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 	// printNetworkInfo(info)
 }
 
+// func CreateFolders(domainName string) {
+// 	// Get the current working directory
+// 	cwd, err := os.Getwd()
+// 	if err != nil {
+// 		fmt.Println("Error getting current working directory:", err)
+// 		return
+// 	}
+// 	folder1 := fmt.Sprintf("fabrix/%v/Network/config", domainName)
+// 	folder2 := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
+// 	folder3 := fmt.Sprintf("fabrix/%v/Network/peercfg", domainName)
+// 	// Create the full path for the new folder
+// 	folderPath1 := filepath.Join(cwd, folder1)
+// 	folderPath2 := filepath.Join(cwd, folder2)
+// 	folderPath3 := filepath.Join(cwd, folder3)
+
+// 	// Create the folder
+// 	err = os.MkdirAll(folderPath1, os.ModePerm)
+// 	if err != nil {
+// 		fmt.Println("Error creating folder:", err)
+// 		return
+// 	}
+// 	// Create the folder
+// 	err = os.MkdirAll(folderPath2, os.ModePerm)
+// 	if err != nil {
+// 		fmt.Println("Error creating folder:", err)
+// 		return
+// 	}
+
+// 	// Create the folder
+// 	err = os.MkdirAll(folderPath3, os.ModePerm)
+// 	if err != nil {
+// 		fmt.Println("Error creating folder:", err)
+// 		return
+// 	}
+
+// 	fmt.Println("Folder created at:", domainName)
+// }
+
+
+
 func CreateFolders(domainName string) {
 	// Get the current working directory
 	cwd, err := os.Getwd()
@@ -614,36 +653,49 @@ func CreateFolders(domainName string) {
 		fmt.Println("Error getting current working directory:", err)
 		return
 	}
-	folder1 := fmt.Sprintf("fabrix/%v/Network/config", domainName)
-	folder2 := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
-	folder3 := fmt.Sprintf("fabrix/%v/Network/peercfg", domainName)
-	// Create the full path for the new folder
-	folderPath1 := filepath.Join(cwd, folder1)
-	folderPath2 := filepath.Join(cwd, folder2)
-	folderPath3 := filepath.Join(cwd, folder3)
 
-	// Create the folder
-	err = os.MkdirAll(folderPath1, os.ModePerm)
-	if err != nil {
-		fmt.Println("Error creating folder:", err)
-		return
-	}
-	// Create the folder
-	err = os.MkdirAll(folderPath2, os.ModePerm)
-	if err != nil {
-		fmt.Println("Error creating folder:", err)
-		return
+	// Define the root folder path
+	rootFolder := filepath.Join(cwd, fmt.Sprintf("fabrix/%v", domainName))
+
+	// Check if the root folder exists, and remove it if it does
+	if _, err := os.Stat(rootFolder); !os.IsNotExist(err) {
+		fmt.Println("Removing existing root folder:", rootFolder)
+		err = os.RemoveAll(rootFolder) // Remove the root folder and its contents
+		if err != nil {
+			fmt.Printf("Error removing root folder %s: %v\n", rootFolder, err)
+			return
+		}
 	}
 
-	// Create the folder
-	err = os.MkdirAll(folderPath3, os.ModePerm)
+	// Recreate the root folder after deletion
+	err = os.MkdirAll(rootFolder, os.ModePerm)
 	if err != nil {
-		fmt.Println("Error creating folder:", err)
+		fmt.Printf("Error creating root folder %s: %v\n", rootFolder, err)
 		return
 	}
+	fmt.Println("Created root folder:", rootFolder)
 
-	fmt.Println("Folder created at:", domainName)
+	// Define subfolders to create inside the root folder
+	folder1 := filepath.Join(rootFolder, "Network/config")
+	folder2 := filepath.Join(rootFolder, "Network/docker")
+	folder3 := filepath.Join(rootFolder, "Network/peercfg")
+
+	// Create the subfolders
+	subfolders := []string{folder1, folder2, folder3}
+
+	for _, folder := range subfolders {
+		err = os.MkdirAll(folder, os.ModePerm)
+		if err != nil {
+			fmt.Printf("Error creating subfolder %s: %v\n", folder, err)
+			return
+		}
+		fmt.Println("Created subfolder:", folder)
+	}
+
+	fmt.Printf("Folders for domain %v recreated successfully!\n", domainName)
 }
+
+
 
 func CreateRegisterEnroll(domainName string, orgPeers map[string]int) {
 
@@ -874,13 +926,13 @@ function create%sCertificates(){
 	fmt.Println("Successfully created registerEnroll.sh")
 }
 
-func CreateStartNetwork(domainName string, orgPeers map[string]int) {
+func CreateStartNetwork(domainName string, orgPeers map[string]int, channelName string) {
 	caser := cases.Title(language.English)
 
 	filePath := fmt.Sprintf("./fabrix/%v/Network/startNetwork.sh", domainName)
 	scriptContent0 := fmt.Sprintf(`
 	#!/bin/bash
-	export DOMAIN_NAME="%s"
+	export DOMAIN_NAME=%s
 
 	echo "------------Register the ca admin for each organization—----------------"
 
@@ -905,7 +957,7 @@ echo "-------------Generate the genesis block—-------------------------------"
 
 export FABRIC_CFG_PATH=${PWD}/config
 
-export CHANNEL_NAME=fabrixchannel
+export CHANNEL_NAME=%s
 
 configtxgen -profile ThreeOrgsChannel -outputBlock ${PWD}/channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
 sleep 2
@@ -926,7 +978,7 @@ sleep 2
 
 export FABRIC_CFG_PATH=${PWD}/peercfg
 export CORE_PEER_TLS_ENABLED=true
-	`, domainName)
+	`, domainName, channelName)
 
 	if err := appendToScriptFile(scriptContent0, filePath); err != nil {
 		fmt.Println("Error appending to script file:", err)

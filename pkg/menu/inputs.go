@@ -10,10 +10,10 @@ import (
 	"github.com/vineshtk/fabrix/pkg/configs"
 )
 
-func GetInputsFromUser() {
+func GetInputsFromUser(channelName string) {
 	fmt.Print("\n")
 	domainName := ""
-	fmt.Println("Enter the domain name: ")
+	fmt.Println("Enter the domain name (eg: example.com): ")
 	fmt.Scanln(&domainName)
 	fmt.Print("Enter the number of organizations: ")
 	numOrganizations, err := getInputAsInt()
@@ -39,7 +39,7 @@ func GetInputsFromUser() {
 		// Store the values in the map
 		OrganizationPeers[orgName] = numPeers
 	}
-	configs.CreateConfigs(domainName, OrganizationPeers)
+	configs.CreateConfigs(domainName, OrganizationPeers, channelName)
 }
 
 // getInputAsString reads a line of input from the terminal and returns it as a string.

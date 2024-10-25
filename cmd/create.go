@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/vineshtk/fabrix/pkg/menu"
 
 	"github.com/spf13/cobra"
@@ -14,13 +17,22 @@ var networkCmd = &cobra.Command{
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// Retrieve the value of the flag
+		channelName, err := cmd.Flags().GetString("channel")
+		if err != nil {
+			fmt.Println("Error retrieving domain flag:", err)
+			os.Exit(1)
+		}
 		menu.ShowMainMenu()
-		menu.GetInputsFromUser()
+		menu.GetInputsFromUser(channelName)
 	},
 }
 
 func init() {
+
 	rootCmd.AddCommand(networkCmd)
-	// networkCmd.PersistentFlags().String("foo", "", "A help for foo")
-	// networkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// networkCmd.Flags().BoolVarP(&option, "option", "o", false, "Modify option")
+	networkCmd.Flags().String("channel", "fabrixchannel", "for custom channel")
+
 }
