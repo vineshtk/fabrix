@@ -36,6 +36,4 @@ and usage of using your command.`,
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-	// networkCmd.PersistentFlags().String("foo", "", "A help for foo")
-	// networkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
