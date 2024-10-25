@@ -14,7 +14,7 @@ var domainName string
 
 // var channelName string
 
-func GetInputsFromUser(channelName string) {
+func GetInputsFromUser(channelName string, version string) {
 	fmt.Print("\n")
 	fmt.Print("Enter the domain name (eg: example.com): ")
 	fmt.Scan(&domainName)
@@ -48,7 +48,7 @@ func GetInputsFromUser(channelName string) {
 		fmt.Scan(&channelName)
 	}
 
-	configs.CreateConfigs(domainName, OrganizationPeers, channelName)
+	configs.CreateConfigs(domainName, OrganizationPeers, channelName, version)
 	
 }
 

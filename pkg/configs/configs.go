@@ -61,10 +61,10 @@ var keys []string
 //go:embed defaults/peercfg/core.yaml
 var coreYaml []byte
 
-func CreateConfigs(domainName string, orgPeers map[string]int, channelName string) {
+func CreateConfigs(domainName string, orgPeers map[string]int, channelName string, version string) {
 	CreateFolders(domainName)
 	CreateDockerComposeCA(domainName, orgPeers)
-	CreateDockerComposeMembers(domainName, orgPeers)
+	CreateDockerComposeMembers(domainName, orgPeers, version)
 	CreateConfigTx(domainName, orgPeers)
 	createPeercfg(domainName)
 	CreateRegisterEnroll(domainName, orgPeers)
@@ -221,7 +221,7 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 	fmt.Println("docker-compose-ca.yaml Configuration file created/updated successfully!")
 }
 
-func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
+func CreateDockerComposeMembers(domainName string, orgPeers map[string]int, version string) {
 
 	//viper.KeyDelimiter(":") to adjust the key delimiter from "." to ":"
 	// for adding keys like "orderer.example.com"
@@ -240,7 +240,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 	// creating configs for ordering service
 	custom_viper.Set(fmt.Sprintf("volumes:orderer.%v", domainName), map[string]string{})
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:container_name", domainName), fmt.Sprintf("orderer.%v", domainName))
-	custom_viper.Set(fmt.Sprintf("services:orderer.%v:image", domainName), "hyperledger/fabric-orderer:2.5.4")
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:image", domainName),fmt.Sprintf( "hyperledger/fabric-orderer:%s", version))
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:labels:service", domainName), "hyperledger-fabric")
 
 	ordererEnv := []string{
@@ -305,7 +305,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
 	// configs for CLI
 	custom_viper.Set("services:cli:container_name", "cli")
-	custom_viper.Set("services:cli:image", "hyperledger/fabric-tools:2.5.4")
+	custom_viper.Set("services:cli:image",fmt.Sprintf("hyperledger/fabric-tools:%s", version) )
 	custom_viper.Set("services:cli:labels:service", "hyperledger-fabric")
 	custom_viper.Set("services:cli:tty", true)
 	custom_viper.Set("services:cli:stdin_open", true)
@@ -368,7 +368,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int) {
 
 			// peer config
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:container_name", peer, org, domainName), fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
-			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:image", peer, org, domainName), "hyperledger/fabric-peer:2.5.4")
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:image", peer, org, domainName), fmt.Sprintf("hyperledger/fabric-peer:%s", version) )
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:labels:service", peer, org, domainName), "hyperledger-fabric")
 
 			peerEnv := []string{

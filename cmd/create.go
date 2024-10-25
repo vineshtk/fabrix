@@ -23,8 +23,15 @@ and usage of using your command.`,
 			fmt.Println("Error retrieving domain flag:", err)
 			os.Exit(1)
 		}
+
+		version, err := cmd.Flags().GetString("version")
+		if err != nil {
+			fmt.Println("Error retrieving domain flag:", err)
+			os.Exit(1)
+		}
+		
 		menu.ShowMainMenu()
-		menu.GetInputsFromUser(channelName)
+		menu.GetInputsFromUser(channelName, version)
 	},
 }
 
@@ -32,6 +39,6 @@ func init() {
 
 	rootCmd.AddCommand(networkCmd)
 	// networkCmd.Flags().BoolVarP(&option, "option", "o", false, "Modify option")
-	networkCmd.Flags().String("channel", "", "for custom channel")
-
+	networkCmd.Flags().String("channel", "", "for custom channel(eg.mychannel)")
+	networkCmd.Flags().String("version", "2.5.4", "for specific fabric version(eg.2.5.4)")
 }
