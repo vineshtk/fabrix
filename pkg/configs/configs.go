@@ -19,6 +19,7 @@ type NetworkInfo struct {
 	NumberOfOrganisations int            `json:"numberOfOrganisations,omitempty"`
 	DomainName            string         `json:"domainName,omitempty"`
 	NetworkName           string         `json:"networkName,omitempty"`
+	ChannelName           string         `json:"channelName,omitempty"`
 	Organisations         []Organisation `json:"organisations,omitempty"`
 	Orderer               Organisation   `json:"orderer,omitempty"`
 }
@@ -28,8 +29,8 @@ type Organisation struct {
 	Ca    CA     `json:"ca,omitempty"`
 	Peers []Peer `json:"peers,omitempty"`
 	MSPId string `json:"MSPId,omitempty"`
-	Admin Admin  `json:"admin,omitempty"`
-	User  User   `json:"user,omitempty"`
+	// Admin Admin  `json:"admin,omitempty"`
+	// User  User   `json:"user,omitempty"`
 }
 
 type CA struct {
@@ -69,7 +70,18 @@ func CreateConfigs(domainName string, orgPeers map[string]int, channelName strin
 	CreateRegisterEnroll(domainName, orgPeers)
 	CreateStartNetwork(domainName, orgPeers, channelName)
 	createStopNetwork(domainName)
+	createNetworkInfoFile(domainName)
 	// ReadCaConfig(domainName)
+}
+
+// use this function to save the network info to JSON file
+func createNetworkInfoFile(domainName string) {
+	filePath := fmt.Sprintf("./fabrix/%v/Network/network_info.json", domainName)
+	// Save the network info to a JSON file
+	err := SaveNetworkInfoToFile(info, filePath)
+	if err != nil {
+		fmt.Println("Error saving network info:", err)
+	}
 }
 
 // The CreateDockerComposeCA is used to create the CAs for all the organisations and orderer
@@ -603,48 +615,8 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 	}
 	fmt.Println("configtx.yaml Configuration file created/updated successfully!")
 	// fmt.Println("this is info", info)
-	// printNetworkInfo(info)
+
 }
-
-// func CreateFolders(domainName string) {
-// 	// Get the current working directory
-// 	cwd, err := os.Getwd()
-// 	if err != nil {
-// 		fmt.Println("Error getting current working directory:", err)
-// 		return
-// 	}
-// 	folder1 := fmt.Sprintf("fabrix/%v/Network/config", domainName)
-// 	folder2 := fmt.Sprintf("fabrix/%v/Network/docker", domainName)
-// 	folder3 := fmt.Sprintf("fabrix/%v/Network/peercfg", domainName)
-// 	// Create the full path for the new folder
-// 	folderPath1 := filepath.Join(cwd, folder1)
-// 	folderPath2 := filepath.Join(cwd, folder2)
-// 	folderPath3 := filepath.Join(cwd, folder3)
-
-// 	// Create the folder
-// 	err = os.MkdirAll(folderPath1, os.ModePerm)
-// 	if err != nil {
-// 		fmt.Println("Error creating folder:", err)
-// 		return
-// 	}
-// 	// Create the folder
-// 	err = os.MkdirAll(folderPath2, os.ModePerm)
-// 	if err != nil {
-// 		fmt.Println("Error creating folder:", err)
-// 		return
-// 	}
-
-// 	// Create the folder
-// 	err = os.MkdirAll(folderPath3, os.ModePerm)
-// 	if err != nil {
-// 		fmt.Println("Error creating folder:", err)
-// 		return
-// 	}
-
-// 	fmt.Println("Folder created at:", domainName)
-// }
-
-
 
 func CreateFolders(domainName string) {
 	// Get the current working directory
@@ -673,7 +645,7 @@ func CreateFolders(domainName string) {
 		fmt.Printf("Error creating root folder %s: %v\n", rootFolder, err)
 		return
 	}
-	fmt.Println("Created root folder:", rootFolder)
+	// fmt.Println("Created root folder:", rootFolder)
 
 	// Define subfolders to create inside the root folder
 	folder1 := filepath.Join(rootFolder, "Network/config")
@@ -689,13 +661,11 @@ func CreateFolders(domainName string) {
 			fmt.Printf("Error creating subfolder %s: %v\n", folder, err)
 			return
 		}
-		fmt.Println("Created subfolder:", folder)
+		// fmt.Println("Created subfolder:", folder)
 	}
 
-	fmt.Printf("Folders for domain %v recreated successfully!\n", domainName)
+	fmt.Printf("Folders for domain %v created successfully!\n", domainName)
 }
-
-
 
 func CreateRegisterEnroll(domainName string, orgPeers map[string]int) {
 
@@ -927,6 +897,9 @@ function create%sCertificates(){
 }
 
 func CreateStartNetwork(domainName string, orgPeers map[string]int, channelName string) {
+	info.ChannelName = channelName
+	printNetworkInfo(info)
+
 	caser := cases.Title(language.English)
 
 	filePath := fmt.Sprintf("./fabrix/%v/Network/startNetwork.sh", domainName)
@@ -997,7 +970,7 @@ export CORE_PEER_TLS_ENABLED=true
 	export ORG_MSP="%s"
 	`, org, domainName, org, orgMSP)
 
-		if err :=     appendToScriptFile(scriptContent1, filePath); err != nil {
+		if err := appendToScriptFile(scriptContent1, filePath); err != nil {
 			fmt.Println("Error appending to script file:", err)
 			return
 		}
@@ -1077,7 +1050,6 @@ export CORE_PEER_TLS_ENABLED=true
 				peerString := fmt.Sprintf("--peerAddresses localhost:%d --tlsRootCertFiles $%s_PEER_TLSROOTCERT", peerPort, upperOrg)
 				peerStringList = append(peerStringList, peerString)
 			}
-
 		}
 	}
 	peerStrings := strings.Join(peerStringList, "  ")
