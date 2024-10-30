@@ -303,32 +303,32 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int, vers
 	}
 	info.Orderer.Peers = append(info.Orderer.Peers, ordererPeer)
 
-	// configs for CLI
-	custom_viper.Set("services:cli:container_name", "cli")
-	custom_viper.Set("services:cli:image",fmt.Sprintf("hyperledger/fabric-tools:%s", version) )
-	custom_viper.Set("services:cli:labels:service", "hyperledger-fabric")
-	custom_viper.Set("services:cli:tty", true)
-	custom_viper.Set("services:cli:stdin_open", true)
+	// // configs for CLI
+	// custom_viper.Set("services:cli:container_name", "cli")
+	// custom_viper.Set("services:cli:image",fmt.Sprintf("hyperledger/fabric-tools:%s", version) )
+	// custom_viper.Set("services:cli:labels:service", "hyperledger-fabric")
+	// custom_viper.Set("services:cli:tty", true)
+	// custom_viper.Set("services:cli:stdin_open", true)
 
-	envSliceCLI := []string{
-		"GOPATH=/opt/gopath",
-		"FABRIC_LOGGING_SPEC=INFO",
-		"CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock",
-	}
-	custom_viper.Set("services:cli:environment", envSliceCLI)
+	// envSliceCLI := []string{
+	// 	"GOPATH=/opt/gopath",
+	// 	"FABRIC_LOGGING_SPEC=INFO",
+	// 	"CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock",
+	// }
+	// custom_viper.Set("services:cli:environment", envSliceCLI)
 
-	custom_viper.Set("services:cli:working_dir", "/opt/gopath/src/github.com/hyperledger/fabric/peer")
-	custom_viper.Set("services:cli:command", "/bin/bash")
+	// custom_viper.Set("services:cli:working_dir", "/opt/gopath/src/github.com/hyperledger/fabric/peer")
+	// custom_viper.Set("services:cli:command", "/bin/bash")
 
-	CLIVolumes := []string{
-		"/var/run/docker.sock:/host/var/run/docker.sock",
-		"../organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations",
-	}
-	custom_viper.Set("services:cli:volumes", CLIVolumes)
-	custom_viper.Set("services:cli:networks", networkSlice)
+	// CLIVolumes := []string{
+	// 	"/var/run/docker.sock:/host/var/run/docker.sock",
+	// 	"../organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations",
+	// }
+	// custom_viper.Set("services:cli:volumes", CLIVolumes)
+	// custom_viper.Set("services:cli:networks", networkSlice)
 
-	// CLI depends will be added from the for loop
-	CLIDepends := []string{}
+	// // CLI depends will be added from the for loop
+	// CLIDepends := []string{}
 
 	// for creating port numbers dynamically as well keeping the peer count
 	i := 0
@@ -432,8 +432,8 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int, vers
 			custom_viper.Set(fmt.Sprintf("volumes:peer%v.%v.%v", peer, org, domainName), map[string]string{})
 
 			// adding peers to depends field of CLI - may be improved
-			CLIDepends = append(CLIDepends, fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
-			custom_viper.Set("services:cli:depends_on", CLIDepends)
+			// CLIDepends = append(CLIDepends, fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
+			// custom_viper.Set("services:cli:depends_on", CLIDepends)
 
 			if err := custom_viper.SafeWriteConfig(); err != nil {
 				if _, ok := err.(viper.ConfigFileAlreadyExistsError); ok {

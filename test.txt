@@ -1,5 +1,5 @@
 export FABRIC_CFG_PATH=./peercfg
-export CHANNEL_NAME=fabrixchannel
+export CHANNEL_NAME=autochannel
 export CORE_PEER_LOCALMSPID=ManufacturerMSP
 export CORE_PEER_TLS_ENABLED=true
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/ca.crt
@@ -13,4 +13,4 @@ export MVD_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/mvd.auto.com/
 
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.auto.com --tls --cafile $ORDERER_CA -C $CHANNEL_NAME -n sample-chaincode --peerAddresses localhost:7071 --tlsRootCertFiles $MANUFACTURER_PEER_TLSROOTCERT --peerAddresses localhost:7051 --tlsRootCertFiles $DEALER_PEER_TLSROOTCERT --peerAddresses localhost:7091 --tlsRootCertFiles $MVD_PEER_TLSROOTCERT -c '{"function":"CreateCar","Args":["Car-11", "Tata", "Nexon", "White", "Factory-1", "22/07/2023"]}'
 
-peer chaincode query -C fabrixchannel -n sample-chaincode -c '{"Args":["GetAllCars"]}'
+peer chaincode query -C $CHANNEL_NAME -n sample-chaincode -c '{"Args":["GetAllCars"]}'
