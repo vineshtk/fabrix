@@ -48,7 +48,7 @@ func GetInputsFromUser(channelName string, version string) {
 		fmt.Scan(&channelName)
 	}
 
-	configs.CreateConfigs(domainName, OrganizationPeers, channelName, version)
+	configs.CreateConfigs(domainName, OrganizationPeers, channelName, version,numOrganizations )
 	
 }
 

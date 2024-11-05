@@ -61,9 +61,9 @@ var keys []string
 //go:embed defaults/peercfg/core.yaml
 var coreYaml []byte
 
-func CreateConfigs(domainName string, orgPeers map[string]int, channelName string, version string) {
+func CreateConfigs(domainName string, orgPeers map[string]int, channelName string, version string, numberOfOrg int) {
 	CreateFolders(domainName)
-	CreateDockerComposeCA(domainName, orgPeers)
+	CreateDockerComposeCA(domainName, orgPeers, numberOfOrg)
 	CreateDockerComposeMembers(domainName, orgPeers, version)
 	CreateConfigTx(domainName, orgPeers)
 	createPeercfg(domainName)
@@ -71,7 +71,6 @@ func CreateConfigs(domainName string, orgPeers map[string]int, channelName strin
 	CreateStartNetwork(domainName, orgPeers, channelName)
 	createStopNetwork(domainName)
 	createNetworkInfoFile(domainName)
-	// ReadCaConfig(domainName)
 }
 
 // use this function to save the network info to JSON file
@@ -85,7 +84,7 @@ func createNetworkInfoFile(domainName string) {
 }
 
 // The CreateDockerComposeCA is used to create the CAs for all the organisations and orderer
-func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
+func CreateDockerComposeCA(domainName string, orgPeers map[string]int, numberOfOrg int ) {
 
 	// set the file name, type and path
 	viper.SetConfigName("docker-compose-ca")
@@ -102,7 +101,7 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 
 	info = &NetworkInfo{}
 	// change this value dynamically later
-	info.NumberOfOrganisations = 3
+	info.NumberOfOrganisations = numberOfOrg
 
 	info.DomainName = domainName
 	info.NetworkName = "fabric_test"
@@ -216,6 +215,7 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int) {
 		info.Organisations = append(info.Organisations, organisation)
 
 		i += 1
+		
 	}
 
 	fmt.Println("docker-compose-ca.yaml Configuration file created/updated successfully!")
@@ -240,7 +240,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int, vers
 	// creating configs for ordering service
 	custom_viper.Set(fmt.Sprintf("volumes:orderer.%v", domainName), map[string]string{})
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:container_name", domainName), fmt.Sprintf("orderer.%v", domainName))
-	custom_viper.Set(fmt.Sprintf("services:orderer.%v:image", domainName),fmt.Sprintf( "hyperledger/fabric-orderer:%s", version))
+	custom_viper.Set(fmt.Sprintf("services:orderer.%v:image", domainName), fmt.Sprintf("hyperledger/fabric-orderer:%s", version))
 	custom_viper.Set(fmt.Sprintf("services:orderer.%v:labels:service", domainName), "hyperledger-fabric")
 
 	ordererEnv := []string{
@@ -368,7 +368,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int, vers
 
 			// peer config
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:container_name", peer, org, domainName), fmt.Sprintf("peer%v.%v.%v", peer, org, domainName))
-			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:image", peer, org, domainName), fmt.Sprintf("hyperledger/fabric-peer:%s", version) )
+			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:image", peer, org, domainName), fmt.Sprintf("hyperledger/fabric-peer:%s", version))
 			custom_viper.Set(fmt.Sprintf("services:peer%v.%v.%v:labels:service", peer, org, domainName), "hyperledger-fabric")
 
 			peerEnv := []string{
@@ -896,6 +896,7 @@ function create%sCertificates(){
 	fmt.Println("Successfully created registerEnroll.sh")
 }
 
+
 func CreateStartNetwork(domainName string, orgPeers map[string]int, channelName string) {
 	info.ChannelName = channelName
 	printNetworkInfo(info)
@@ -957,7 +958,6 @@ export CORE_PEER_TLS_ENABLED=true
 		fmt.Println("Error appending to script file:", err)
 		return
 	}
-	peerStringList := []string{}
 
 	for i, org := range keys {
 		org := strings.ToLower(org)
@@ -1021,52 +1021,16 @@ export CORE_PEER_TLS_ENABLED=true
 	peer channel update -f ${PWD}/channel-artifacts/config_update_in_envelope.pb -c $CHANNEL_NAME -o localhost:7050  --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --tls --cafile $ORDERER_CA
 	sleep 1
 
-	echo "—---------------package chaincode—-------------"
-
-	peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/../Chaincode/ --lang golang --label chaincode_1.0
-	sleep 1
-
-	echo "—---------------install chaincode in ${ORG_NAME} peer—-------------"
-
-	peer lifecycle chaincode install chaincode.tar.gz
-	sleep 3
-
-	peer lifecycle chaincode queryinstalled
-
-	export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid chaincode.tar.gz)
-
-	echo "—---------------Approve chaincode in ${ORG_NAME} peer—-------------"
-
-	peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --collections-config ../Chaincode/collection.json --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
-	sleep 1
-
 		`, j, peerPort, upperOrg)
 
 				if err := appendToScriptFile(scriptContent2, filePath); err != nil {
 					fmt.Println("Error appending to script file:", err)
 					return
 				}
-				// for committing chaincode need peer details
-				peerString := fmt.Sprintf("--peerAddresses localhost:%d --tlsRootCertFiles $%s_PEER_TLSROOTCERT", peerPort, upperOrg)
-				peerStringList = append(peerStringList, peerString)
 			}
 		}
 	}
-	peerStrings := strings.Join(peerStringList, "  ")
 
-	scriptContent3 := fmt.Sprintf(`
-	echo "—---------------Commit chaincode —-------------"
-	peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --sequence 1 --collections-config ../Chaincode/collection.json --tls --cafile $ORDERER_CA --output json
-	peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --sequence 1 --collections-config ../Chaincode/collection.json --tls --cafile $ORDERER_CA %v
-	sleep 1
-	peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name sample-chaincode --cafile $ORDERER_CA
-
-	`, peerStrings)
-
-	if err := appendToScriptFile(scriptContent3, filePath); err != nil {
-		fmt.Println("Error appending to script file:", err)
-		return
-	}
 	fmt.Println("Successfully created startNetwork.sh")
 }
 
@@ -1153,6 +1117,7 @@ func createPeercfg(domainName string) {
 }
 
 // these are for future works
+
 // func CreateCertificates(orgPeers map[string]int) {
 // 	for orgName, peerCount := range orgPeers {
 // 		caName := fmt.Sprintf("ca-%s", orgName)
