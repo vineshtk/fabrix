@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/spf13/viper"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -120,6 +121,20 @@ export CORE_PEER_TLS_ENABLED=true
 
 func InstallChaincode(ccPath string, ccLang string) {
 	domainName := "auto.com"
+
+	filePath := fmt.Sprintf("./fabrix/%v/Network", domainName)
+
+	// Set the file you want to read
+	viper.SetConfigName("network_info")
+	viper.SetConfigType("json")
+	viper.AddConfigPath(filePath)
+
+	// Read the config file
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Printf("Error reading config file, %s", err)
+		return
+	}
+
 	path := filepath.Join("fabrix", domainName, "Network")
 
 	// Create the initial content of the script
@@ -161,7 +176,7 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --l
 	extraCommands := `
 # Add more commands here as needed
 echo "Additional configuration"
-peer lifecycle chaincode install chaincode.tar.gz
+# peer lifecycle chaincode install chaincode.tar.gz
 `
 
 	_, err = tmpFile.WriteString(extraCommands)
@@ -171,12 +186,11 @@ peer lifecycle chaincode install chaincode.tar.gz
 	}
 
 	fmt.Println("Script file created and updated successfully!")
-	
+
 	// Display file contents
 	// fmt.Println("Script file contents:")
 	// content, _ := os.ReadFile(tmpFile.Name())
 	// fmt.Println(string(content))
-
 
 	// Make the script executable
 	err = os.Chmod(tmpFile.Name(), 0755)
@@ -199,21 +213,42 @@ peer lifecycle chaincode install chaincode.tar.gz
 
 	fmt.Println("Script executed successfully!")
 
-	// caser := cases.Title(language.English)
+	caser := cases.Title(language.English)
 	// orgNum := viper.GetInt("numberOfOrganisations")
-	// // Additional commands can be added to handle peers for each organization
-	// for i := 0; i < orgNum; i++ {
+	organizations := viper.Get("organisations").([]interface{})
 
-	// 	peerName := fmt.Sprintf("peer%d.%s", i, orgName)
-	// 	fmt.Printf("Processing %s\n", peerName)
+	for _, org := range organizations {
+		orgMap := org.(map[string]interface{})
 
-	// }
+		if name, exists := orgMap["name"].(string); exists {
+			fmt.Println("Organization Name:", name)
+		}
+
+		if orgMSP, exists := orgMap["mspid"].(string); exists {
+			fmt.Println("Organization MSP:", orgMSP)
+		}
+
+		peers := orgMap["peers"].([]interface{})
+		if len(peers) > 0 {
+			firstPeer := peers[0].(map[string]interface{})
+			peerName := firstPeer["name"].(string)
+			peerPort := firstPeer["port"].(float64)
+			fmt.Printf("  First Peer Name: %s, Port: %d\n", peerName, int(peerPort))
+		} else {
+			fmt.Println("  No peers available for this organization.")
+		}
+
+
+
+		
+	}
+
 
 	// peerStringList := []string{}
 
 	// for i, org := range keys {
 	// 	org := strings.ToLower(org)
-	// 	orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
+		orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
 	// 	upperOrg := strings.ToUpper(org)
 	// 	scriptContent1 := fmt.Sprintf(`
 	// #Define dynamic variables

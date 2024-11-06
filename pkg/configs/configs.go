@@ -1168,18 +1168,18 @@ func createPeercfg(domainName string) {
 // }
 
 // func createPeercfg(domainName string) {
-// 	filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
+	// filePath := fmt.Sprintf("./fabrix/%v/Network/peercfg/core.yaml", domainName)
 
-// 	// Set the file you want to read
-// 	viper.SetConfigName("core")
-// 	viper.SetConfigType("yaml")
-// 	viper.AddConfigPath("pkg/configs/defaults/peercfg")
+	// // Set the file you want to read
+	// viper.SetConfigName("core")
+	// viper.SetConfigType("yaml")
+	// viper.AddConfigPath("pkg/configs/defaults/peercfg")
 
-// 	// Read the config file
-// 	if err := viper.ReadInConfig(); err != nil {
-// 		fmt.Printf("Error reading config file, %s", err)
-// 		return
-// 	}
+	// // Read the config file
+	// if err := viper.ReadInConfig(); err != nil {
+	// 	fmt.Printf("Error reading config file, %s", err)
+	// 	return
+	// }
 
 // 	// Create a new file and write the modified content
 // 	newFile, err := os.Create(filePath)
