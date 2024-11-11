@@ -172,6 +172,61 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --l
 	}
 	defer tmpFile.Close()
 
+	organizations := viper.Get("organisations").([]interface{})
+
+	for _, org := range organizations {
+		orgMap := org.(map[string]interface{})
+
+		orgName := orgMap["name"].(string)
+
+		upperOrg := strings.ToUpper(orgName)
+
+		orgMSP := orgMap["mspid"].(string)
+		peers := orgMap["peers"].([]interface{})
+		firstPeer := peers[0].(map[string]interface{})
+		peerName := firstPeer["name"].(string)
+		peerPort := firstPeer["port"].(uint64)
+		// orderMap := org.(map[string]interface{})
+		// ordererName := orderMap["name"].(string)
+		// ordererPeers := orderMap["peers"].([]interface{})
+		// ordererPort := firstPeer["port"].(float64)
+
+		// Append additional commands as needed
+		extraCommands := fmt.Sprintf(`export ORG_NAME_DOMAIN=%s.%s
+	export ORDERER_CA=${PWD}/organizations/ordererOrganizations/${DOMAIN_NAME}/orderers/orderer.${DOMAIN_NAME}/msp/tlscacerts/tlsca.${DOMAIN_NAME}-cert.pem
+	export ORG_NAME=%s
+	export ORG_MSP=%s
+	export PEER=%s
+	export PEER_PORT=%d
+	export ORG_CAP=%s
+	export CORE_PEER_LOCALMSPID=${ORG_MSP}
+	export CORE_PEER_ADDRESS=localhost:${PEER_PORT}
+	export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/${ORG_NAME_DOMAIN}/peers/${PEER}/tls/ca.crt
+	export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/${ORG_NAME_DOMAIN}/users/Admin@${ORG_NAME_DOMAIN}/msp
+	export ${ORG_CAP}_PEER_TLSROOTCERT=${PWD}/organizations/peerOrganizations/${ORG_NAME_DOMAIN}/peers/${PEER}/tls/ca.crt
+
+	echo "—---------------install chaincode in ${ORG_NAME} peer—-------------"
+
+	peer lifecycle chaincode install chaincode.tar.gz
+	sleep 3
+
+	peer lifecycle chaincode queryinstalled
+
+	export CC_PACKAGE_ID=$(peer lifecycle chaincode calculatepackageid chaincode.tar.gz)
+
+	echo "—---------------Approve chaincode in ${ORG_NAME} peer—-------------"
+
+	peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --collections-config ../Chaincode/collection.json --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
+	sleep 1`, orgName, domainName, orgName, orgMSP, peerName, peerPort, upperOrg)
+
+		_, err = tmpFile.WriteString(extraCommands)
+		if err != nil {
+			fmt.Printf("Error writing additional commands to temporary script file: %s\n", err)
+			return
+		}
+
+	}
+
 	// Append additional commands as needed
 	extraCommands := `
 # Add more commands here as needed
@@ -184,8 +239,6 @@ echo "Additional configuration"
 		fmt.Printf("Error writing additional commands to temporary script file: %s\n", err)
 		return
 	}
-
-	fmt.Println("Script file created and updated successfully!")
 
 	// Display file contents
 	// fmt.Println("Script file contents:")
@@ -213,42 +266,39 @@ echo "Additional configuration"
 
 	fmt.Println("Script executed successfully!")
 
-	caser := cases.Title(language.English)
+	// organizations := viper.Get("organisations").([]interface{})
+
+	// for _, org := range organizations {
+	// 	orgMap := org.(map[string]interface{})
+
+	// 	if name, exists := orgMap["name"].(string); exists {
+	// 		fmt.Println("Organization Name:", name)
+	// 	}
+
+	// 	if orgMSP, exists := orgMap["mspid"].(string); exists {
+	// 		fmt.Println("Organization MSP:", orgMSP)
+	// 	}
+
+	// 	peers := orgMap["peers"].([]interface{})
+	// 	if len(peers) > 0 {
+	// 		firstPeer := peers[0].(map[string]interface{})
+	// 		peerName := firstPeer["name"].(string)
+	// 		peerPort := firstPeer["port"].(float64)
+	// 		fmt.Printf("  First Peer Name: %s, Port: %d\n", peerName, int(peerPort))
+	// 	} else {
+	// 		fmt.Println("No peers available for this organization.")
+	// 	}
+
+	// }
+
+	// caser := cases.Title(language.English)
 	// orgNum := viper.GetInt("numberOfOrganisations")
-	organizations := viper.Get("organisations").([]interface{})
-
-	for _, org := range organizations {
-		orgMap := org.(map[string]interface{})
-
-		if name, exists := orgMap["name"].(string); exists {
-			fmt.Println("Organization Name:", name)
-		}
-
-		if orgMSP, exists := orgMap["mspid"].(string); exists {
-			fmt.Println("Organization MSP:", orgMSP)
-		}
-
-		peers := orgMap["peers"].([]interface{})
-		if len(peers) > 0 {
-			firstPeer := peers[0].(map[string]interface{})
-			peerName := firstPeer["name"].(string)
-			peerPort := firstPeer["port"].(float64)
-			fmt.Printf("  First Peer Name: %s, Port: %d\n", peerName, int(peerPort))
-		} else {
-			fmt.Println("  No peers available for this organization.")
-		}
-
-
-
-		
-	}
-
 
 	// peerStringList := []string{}
 
 	// for i, org := range keys {
 	// 	org := strings.ToLower(org)
-		orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
+	// orgMSP := fmt.Sprintf("%vMSP", caser.String(org))
 	// 	upperOrg := strings.ToUpper(org)
 	// 	scriptContent1 := fmt.Sprintf(`
 	// #Define dynamic variables
