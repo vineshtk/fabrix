@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/vineshtk/fabrix/pkg/configs"
 )
 
 var ccpath string
@@ -39,8 +38,8 @@ and usage of using your command.`,
 			os.Exit(1)
 		}
 		// add the logic here
-		fmt.Println(ccPath, ccVersion)
-		configs.InstallChaincode(ccPath, ccLang)
+		fmt.Println(ccPath, ccVersion, ccLang)
+		// configs.InstallChaincode(ccPath, ccLang)
 
 	},
 }
