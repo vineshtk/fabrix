@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/vineshtk/fabrix/pkg/inputs"
 
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ and usage of using your command.`,
 			fmt.Println("Error retrieving domain flag:", err)
 			os.Exit(1)
 		}
+		color.Green("Prompt will ask you to give all the details of your network, please provide details acordingly.")
 		inputs.GetInputsFromUser(channelName, version)
 	},
 }

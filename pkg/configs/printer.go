@@ -23,12 +23,6 @@ func printOrganisation(org Organisation) {
 		fmt.Printf("    CouchDB Name: %s\n", peer.CouchDbName)
 		fmt.Printf("    CouchDB Port: %d\n", peer.CouchDbPort)
 	}
-
-	// fmt.Printf("\nAdmin:\n")
-	// fmt.Printf("  Name: %s\n", org.Admin.Name)
-
-	// fmt.Printf("\nUser:\n")
-	// fmt.Printf("  Name: %s\n", org.User.Name)
 }
 
 // Example to print the entire NetworkInfo
@@ -47,10 +41,11 @@ func printNetworkInfo(networkInfo *NetworkInfo) {
 	}
 }
 
+
 // Save NetworkInfo to a JSON file
 func SaveNetworkInfoToFile(info *NetworkInfo, filePath string) error {
 	// Convert the NetworkInfo struct to JSON
-	data, err := json.MarshalIndent(info, "", "  ") // Pretty-print JSON
+	data, err := json.MarshalIndent(info, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal network info: %v", err)
 	}

@@ -21,12 +21,11 @@ var rootCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		prompts.ShowMainMenu()
-
 	},
 }
 
-func Execute() {
 
+func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your CLI '%s'", err)
 		os.Exit(1)
@@ -34,8 +33,9 @@ func Execute() {
 	runSurvey()
 }
 
+
 func runSurvey() {
-	options := []string{"Start Service", "Stop Service", "Exit"}
+	options := []string{"Create new network configuration", "Choose network", "Exit"}
 
 	var selectedOption string
 	prompt := &survey.Select{
@@ -50,12 +50,12 @@ func runSurvey() {
 
 	switch selectedOption {
 
-	case "Start Service":
+	case "Create new network configuration":
 		rootCmd.SetArgs([]string{"create"})
 		rootCmd.Execute()
 
-	case "Stop Service":
-		rootCmd.SetArgs([]string{"start"})
+	case "Choose network":
+		rootCmd.SetArgs([]string{"list"})
 		rootCmd.Execute()
 
 	case "Exit":

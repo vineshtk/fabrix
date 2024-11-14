@@ -355,9 +355,9 @@ else
 	}
 
 	// Run the script and capture output
-	cmds := fmt.Sprintf("bash %s %s %s", tmpFile.Name(), ccPath, ccLang)
-	cmd := exec.Command("bash", "-c", cmds)
-	// cmd := exec.Command("bash", tmpFile.Name())
+	// cmds := fmt.Sprintf("bash %s %s %s", tmpFile.Name(), ccPath, ccLang)
+	// cmd := exec.Command("bash", "-c", cmds)
+	cmd := exec.Command("bash", tmpFile.Name())
 	cmd.Dir = ccPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
