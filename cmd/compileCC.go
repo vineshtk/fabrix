@@ -6,6 +6,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
+	"github.com/vineshtk/fabrix/pkg/configs"
 )
 
 // networkCmd represents the network command
@@ -18,7 +19,6 @@ and usage of using your command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		rootDir := "./fabrix"
-
 		// Read the directory
 		entries, err := os.ReadDir(rootDir)
 		if err != nil {
@@ -29,7 +29,7 @@ and usage of using your command.`,
 		// List directories
 		for _, entry := range entries {
 			if entry.IsDir() {
-				domains = append(domains,  entry.Name())
+				domains = append(domains, entry.Name())
 			}
 		}
 
@@ -48,8 +48,19 @@ and usage of using your command.`,
 			return
 		}
 
-		fmt.Println("Selected Domain:", selectedDomain)
+		ccPath, err := cmd.Flags().GetString("path")
+		if err != nil {
+			fmt.Println("Error retrieving domain flag:", err)
+			os.Exit(1)
+		}
 
+		ccLang, err := cmd.Flags().GetString("lang")
+		if err != nil {
+			fmt.Println("Error retrieving domain flag:", err)
+			os.Exit(1)
+		}
+		configs.CompileChaincode(ccPath, ccLang)
+		// fmt.Println("Selected Domain:", selectedDomain)
 	},
 }
 
@@ -57,13 +68,13 @@ func init() {
 
 	rootCmd.AddCommand(compileCmd)
 	// networkCmd.Flags().BoolVarP(&option, "option", "o", false, "Modify option")
-	// compileCmd.Flags().StringVarP(&ccpath, "path", "p", "", "specify the chaincode path")
+	compileCmd.Flags().StringVarP(&ccpath, "path", "p", "", "specify the chaincode path")
 	// compileCmd.Flags().StringVarP(&ccversion, "version", "v", "", "specify the version of chaincode")
-	// compileCmd.Flags().StringVarP(&cclang, "lang", "l", "", "specify the chaincode language")
+	compileCmd.Flags().StringVarP(&cclang, "lang", "l", "", "specify the chaincode language")
 
 	// // Mark the flag as required
-	// compileCmd.MarkFlagRequired("path")
+	compileCmd.MarkFlagRequired("path")
 	// compileCmd.MarkFlagRequired("version")
-	// compileCmd.MarkFlagRequired("lang")
+	compileCmd.MarkFlagRequired("lang")
 
 }

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
+	"github.com/vineshtk/fabrix/pkg/prompts"
 )
 
 var version = "0.0.1"
@@ -18,18 +20,46 @@ var rootCmd = &cobra.Command{
 	for deploying and testing the chaincode.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		// Show help if no arguments or flags are passed
+		prompts.ShowMainMenu()
 
-		if len(args) == 0 {
-			cmd.Help()
-			os.Exit(0)
-		}
 	},
 }
 
 func Execute() {
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your CLI '%s'", err)
 		os.Exit(1)
+	}
+	runSurvey()
+}
+
+func runSurvey() {
+	options := []string{"Start Service", "Stop Service", "Exit"}
+
+	var selectedOption string
+	prompt := &survey.Select{
+		Message: "Choose an option:",
+		Options: options,
+	}
+
+	if err := survey.AskOne(prompt, &selectedOption); err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	switch selectedOption {
+
+	case "Start Service":
+		rootCmd.SetArgs([]string{"create"})
+		rootCmd.Execute()
+
+	case "Stop Service":
+		rootCmd.SetArgs([]string{"start"})
+		rootCmd.Execute()
+
+	case "Exit":
+		fmt.Println("Exiting...")
+		os.Exit(0)
 	}
 }

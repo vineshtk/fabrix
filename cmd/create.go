@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/vineshtk/fabrix/pkg/menu"
+	"github.com/vineshtk/fabrix/pkg/inputs"
 
 	"github.com/spf13/cobra"
 )
@@ -29,9 +29,7 @@ and usage of using your command.`,
 			fmt.Println("Error retrieving domain flag:", err)
 			os.Exit(1)
 		}
-		
-		menu.ShowMainMenu()
-		menu.GetInputsFromUser(channelName, version)
+		inputs.GetInputsFromUser(channelName, version)
 	},
 }
 

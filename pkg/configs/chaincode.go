@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -119,7 +120,7 @@ export CORE_PEER_TLS_ENABLED=true
 	fmt.Println("Successfully created startNetwork.sh")
 }
 
-func InstallChaincode(domainName string, ccPath string, ccLang string) {
+func InstallChaincode(domainName string, ccPath string, ccLang string, ccLabel string, ccName string, ccVersion string, ccSequence string) {
 
 	filePath := fmt.Sprintf("./fabrix/%v/Network", domainName)
 
@@ -138,15 +139,23 @@ func InstallChaincode(domainName string, ccPath string, ccLang string) {
 
 	channelName := viper.GetString("channelName")
 	// Create the initial content of the script
-	initialContent := fmt.Sprintf(`#!/bin/bash
+	packageChaincode := fmt.Sprintf(`#!/bin/bash
 echo 'Packaging Chaincode'
 export DOMAIN_NAME=%s
 export CHANNEL_NAME=%s
+
+export CHAINCODE_PATH=%s
+export CHAINCODE_LANGUAGE=%s
+export CHAINCODE_LABEL=%s
+export CHAINCODE_NAME=%s
+export CHAINCODE_VERSION=%s
+export CHAINCODE_SEQUENCE=%s
+
 export ORDERER_CA=${PWD}/organizations/ordererOrganizations/${DOMAIN_NAME}/orderers/orderer.${DOMAIN_NAME}/msp/tlscacerts/tlsca.${DOMAIN_NAME}-cert.pem
 export FABRIC_CFG_PATH=${PWD}/peercfg
 export CORE_PEER_TLS_ENABLED=true
-peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --label chaincode_1.0
-`, domainName, channelName, ccPath, ccLang)
+peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH} --lang ${CHAINCODE_LANGUAGE} --label chaincode_1.0
+`, domainName, channelName, ccPath, ccLang, ccLabel, ccName, ccVersion, ccSequence)
 
 	// Create a temporary file for the script
 	tmpFile, err := os.CreateTemp("", "install_chaincode_*.sh")
@@ -157,7 +166,7 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --l
 	defer os.Remove(tmpFile.Name())
 
 	// Write the initial content to the temp file
-	_, err = tmpFile.Write([]byte(initialContent))
+	_, err = tmpFile.Write([]byte(packageChaincode))
 	if err != nil {
 		fmt.Printf("Error writing initial content to temporary script file: %s\n", err)
 		return
@@ -222,7 +231,6 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --l
 	peer lifecycle chaincode approveformyorg -o localhost:${ORDERER_PORT} --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --collections-config ../Chaincode/collection.json --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
 	sleep 1
 	
-
 	`, orgName, domainName, orgName, peerName, peerPort, upperOrg, ordererPort, orgMSP)
 
 		_, err = tmpFile.WriteString(installApproveCommands)
@@ -279,36 +287,46 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --l
 	fmt.Println("Script executed successfully!")
 }
 
+func CompileChaincode(ccPath string, ccLang string) {
 
-func CompileChaincode(domainName string, ccPath string, ccLang string) {
+packageChaincode := `#!/bin/bash
 
-	filePath := fmt.Sprintf("./fabrix/%v/Network", domainName)
+echo "Compiling Chaincode"
 
-	// Set the file you want to read
-	viper.SetConfigName("network_info")
-	viper.SetConfigType("json")
-	viper.AddConfigPath(filePath)
+# Check if chaincode path and language are passed as arguments
+CHAINCODE_PATH=$1
+CHAINCODE_LANG=$2
 
-	// Read the config file
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Error reading config file, %s", err)
-		return
-	}
+if [ -z "$CHAINCODE_PATH" ] || [ -z "$CHAINCODE_LANG" ]; then
+    echo "Usage: ./script.sh <chaincode-path> <chaincode-lang>"
+    exit 1
+fi
 
-	path := filepath.Join("fabrix", domainName, "Network")
-
-	channelName := viper.GetString("channelName")
-	// Create the initial content of the script
-	packageChaincode := fmt.Sprintf(`#!/bin/bash
-echo 'Packaging Chaincode'
-export DOMAIN_NAME=%s
-export CHANNEL_NAME=%s
-export ORDERER_CA=${PWD}/organizations/ordererOrganizations/${DOMAIN_NAME}/orderers/orderer.${DOMAIN_NAME}/msp/tlscacerts/tlsca.${DOMAIN_NAME}-cert.pem
-export FABRIC_CFG_PATH=${PWD}/peercfg
-export CORE_PEER_TLS_ENABLED=true
-peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --label chaincode_1.0
-`, domainName, channelName, ccPath, ccLang)
-
+# Compile and verify the chaincode based on the language
+if [ "$CHAINCODE_LANG" == "golang" ]; then
+    echo "Running 'go mod tidy' and 'go build' to verify Go chaincode..."
+    cd $CHAINCODE_PATH
+    go mod tidy
+    go build .
+    if [ $? -ne 0 ]; then
+        echo "Go Chaincode compilation failed. Please fix the errors."
+        exit 1
+    fi
+    cd -
+elif [ "$CHAINCODE_LANG" == "javascript" ]; then
+    echo "Running 'npm install' to verify JavaScript chaincode..."
+    cd $CHAINCODE_PATH
+    npm install
+    if [ $? -ne 0 ]; then
+        echo "JavaScript Chaincode compilation failed. Please fix the errors."
+        exit 1
+    fi
+    cd -
+else
+    echo "Unsupported chaincode language: $CHAINCODE_LANG"
+    echo "Supported languages: golang, javascript"
+    exit 1
+`
 	// Create a temporary file for the script
 	tmpFile, err := os.CreateTemp("", "install_chaincode_*.sh")
 	if err != nil {
@@ -325,9 +343,9 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --l
 	}
 
 	// Display file contents
-	fmt.Println("Script file contents:")
-	content, _ := os.ReadFile(tmpFile.Name())
-	fmt.Println(string(content))
+	// fmt.Println("Script file contents:")
+	// content, _ := os.ReadFile(tmpFile.Name())
+	// fmt.Println(string(content))
 
 	// Make the script executable
 	err = os.Chmod(tmpFile.Name(), 0755)
@@ -336,18 +354,36 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/%s --lang %s --l
 		return
 	}
 
-	// Run the script
-	cmd := exec.Command("bash", tmpFile.Name())
-	cmd.Dir = path
+	// Run the script and capture output
+	cmds := fmt.Sprintf("bash %s %s %s", tmpFile.Name(), ccPath, ccLang)
+	cmd := exec.Command("bash", "-c", cmds)
+	// cmd := exec.Command("bash", tmpFile.Name())
+	cmd.Dir = ccPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	// Capture both stdout and stderr
+	var outBuf, errBuf bytes.Buffer
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &errBuf
+
 	err = cmd.Run()
+
+	// Check for errors in execution
 	if err != nil {
 		fmt.Printf("Error executing script: %v\n", err)
+		fmt.Println("Standard Output:", outBuf.String())
+		fmt.Println("Error Output:", errBuf.String())
 		return
 	}
 
-	fmt.Println("Script executed successfully!")
+	// Check if the script produced any error output
+	if errBuf.Len() > 0 {
+		fmt.Println("Error during chaincode packaging:")
+		fmt.Println(errBuf.String())
+		return
+	}
 
+	fmt.Println("Chaincode packaged successfully!")
+	// fmt.Println("Standard Output:", outBuf.String())
 }

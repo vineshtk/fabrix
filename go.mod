@@ -3,6 +3,7 @@ module github.com/vineshtk/fabrix
 go 1.22.5
 
 require (
+	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/fatih/color v1.14.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -10,7 +11,6 @@ require (
 )
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.3.7 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
