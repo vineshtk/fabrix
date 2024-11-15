@@ -62,8 +62,6 @@ func SaveNetworkInfoToFile(info *NetworkInfo, filePath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to write to file: %v", err)
 	}
-
-	fmt.Println("Network info saved to", filePath)
 	return nil
 }
 

@@ -9,9 +9,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ccpath string
-var ccversion string
-var cclang string
+var ccPath string
+var ccVersion string
+var ccLang string
 
 // networkCmd represents the network command
 var deployCmd = &cobra.Command{
@@ -24,7 +24,7 @@ and usage of using your command.`,
 
 		file := ""
 		prompt := &survey.Input{
-			Message: "inform a file to save:",
+			Message: "Provide location of chaincode:",
 			Suggest: func(toComplete string) []string {
 				files, _ := filepath.Glob(toComplete + "*")
 				return files
@@ -32,41 +32,6 @@ and usage of using your command.`,
 		}
 
 		survey.AskOne(prompt, &file)
-
-		rootDir := "./fabrix"
-		// Read the directory
-		entries, err := os.ReadDir(rootDir)
-		if err != nil {
-			fmt.Printf("Error reading directory: %v\n", err)
-			return
-		}
-		var domains []string
-		// List directories
-		for _, entry := range entries {
-			if entry.IsDir() {
-				domains = append(domains, entry.Name())
-			}
-		}
-
-		// Variable to store the user's selection
-		var selectedDomain string
-
-		// Prompt user to select a domain
-		prompt1 := &survey.Select{
-			Message: "Choose a domain:",
-			Options: domains,
-		}
-
-		err = survey.AskOne(prompt1, &selectedDomain)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
-		}
-		name := false
-		prompt2 := &survey.Confirm{
-			Message: "Do you like pie?",
-		}
-		survey.AskOne(prompt2, &name)
 
 		// Retrieve the value of the flag
 		ccPath, err := cmd.Flags().GetString("path")
@@ -87,7 +52,7 @@ and usage of using your command.`,
 			os.Exit(1)
 		}
 		// add the logic here
-		fmt.Println(ccPath, ccVersion, ccLang, selectedDomain)
+		fmt.Println(ccPath, ccVersion, ccLang)
 		// configs.InstallChaincode(selectedDomain, ccPath, ccLang)
 	},
 }

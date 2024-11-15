@@ -68,9 +68,9 @@ func init() {
 
 	rootCmd.AddCommand(compileCmd)
 	// networkCmd.Flags().BoolVarP(&option, "option", "o", false, "Modify option")
-	compileCmd.Flags().StringVarP(&ccpath, "path", "p", "", "specify the chaincode path")
+	compileCmd.Flags().StringVarP(&ccPath, "path", "p", "", "specify the chaincode path")
 	// compileCmd.Flags().StringVarP(&ccversion, "version", "v", "", "specify the version of chaincode")
-	compileCmd.Flags().StringVarP(&cclang, "lang", "l", "", "specify the chaincode language")
+	compileCmd.Flags().StringVarP(&ccLang, "lang", "l", "", "specify the chaincode language")
 
 	// // Mark the flag as required
 	compileCmd.MarkFlagRequired("path")

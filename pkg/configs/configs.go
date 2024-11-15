@@ -218,7 +218,7 @@ func CreateDockerComposeCA(domainName string, orgPeers map[string]int, numberOfO
 		
 	}
 
-	fmt.Println("docker-compose-ca.yaml Configuration file created/updated successfully!")
+	// fmt.Println("docker-compose-ca.yaml Configuration file created/updated successfully!")
 }
 
 func CreateDockerComposeMembers(domainName string, orgPeers map[string]int, version string) {
@@ -459,7 +459,7 @@ func CreateDockerComposeMembers(domainName string, orgPeers map[string]int, vers
 		info.Organisations[index].MSPId = orgMSP
 		info.Organisations[index].Peers = peerList
 	}
-	fmt.Println("docker-compose-orgs.yaml Configuration file created/updated successfully!")
+	// fmt.Println("docker-compose-orgs.yaml Configuration file created/updated successfully!")
 }
 
 func CreateConfigTx(domainName string, orgPeers map[string]int) {
@@ -613,8 +613,7 @@ func CreateConfigTx(domainName string, orgPeers map[string]int) {
 			log.Fatalf("Error while creating config file %s", err)
 		}
 	}
-	fmt.Println("configtx.yaml Configuration file created/updated successfully!")
-	// fmt.Println("this is info", info)
+	// fmt.Println("configtx.yaml Configuration file created/updated successfully!")
 
 }
 
@@ -661,10 +660,9 @@ func CreateFolders(domainName string) {
 			fmt.Printf("Error creating subfolder %s: %v\n", folder, err)
 			return
 		}
-		// fmt.Println("Created subfolder:", folder)
 	}
 
-	fmt.Printf("Folders for domain %v created successfully!\n", domainName)
+	// fmt.Printf("Folders for domain %v created successfully!\n", domainName)
 }
 
 func CreateRegisterEnroll(domainName string, orgPeers map[string]int) {
@@ -893,13 +891,12 @@ function create%sCertificates(){
 			return
 		}
 	}
-	fmt.Println("Successfully created registerEnroll.sh")
+	// fmt.Println("Successfully created registerEnroll.sh")
 }
 
 
 func CreateStartNetwork(domainName string, orgPeers map[string]int, channelName string) {
 	info.ChannelName = channelName
-	printNetworkInfo(info)
 
 	caser := cases.Title(language.English)
 
@@ -1031,7 +1028,7 @@ export CORE_PEER_TLS_ENABLED=true
 		}
 	}
 
-	fmt.Println("Successfully created startNetwork.sh")
+	// fmt.Println("Successfully created startNetwork.sh")
 }
 
 func appendToScriptFile(content string, filePath string) error {
@@ -1088,7 +1085,7 @@ func createStopNetwork(domainName string) {
 		fmt.Println("Error appending to script file:", err)
 		return
 	}
-	fmt.Println("Successfully created stopNetwork.sh")
+	// fmt.Println("Successfully created stopNetwork.sh")
 }
 
 func createPeercfg(domainName string) {
@@ -1113,7 +1110,7 @@ func createPeercfg(domainName string) {
 		return
 	}
 
-	fmt.Println("successfully created core.yaml")
+	// fmt.Println("successfully created core.yaml")
 }
 
 // these are for future works

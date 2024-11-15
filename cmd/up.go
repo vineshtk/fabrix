@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 
@@ -10,10 +11,10 @@ import (
 
 // networkCmd represents the network command
 var runCmd = &cobra.Command{
-	Use:     "start",
-	Aliases: []string{"sn"},
-	Args:    cobra.ExactArgs(1),
-	Short:   "Use this command to start a network and install chaincode",
+	Use: "up",
+	// Aliases: []string{"up"},
+	Args:  cobra.ExactArgs(1),
+	Short: "Use this command to start a network and install chaincode",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -29,8 +30,10 @@ and usage of using your command.`,
 
 		command := exec.Command("/bin/bash", "startNetwork.sh")
 		command.Dir = scriptDir
-		command.Stdout = os.Stdout
-		command.Stderr = os.Stderr
+		command.Stdout = io.Discard
+		command.Stderr = io.Discard
+		// command.Stdout = os.Stdout
+		// command.Stderr = os.Stderr
 
 		err = command.Run()
 		if err != nil {

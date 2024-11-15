@@ -3,6 +3,7 @@ package configs
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -275,8 +276,10 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH
 	// Run the script
 	cmd := exec.Command("bash", tmpFile.Name())
 	cmd.Dir = path
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 
 	err = cmd.Run()
 	if err != nil {

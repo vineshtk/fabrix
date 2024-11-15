@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 
@@ -29,8 +30,8 @@ and usage of using your command.`,
 
 		command := exec.Command("/bin/bash", "stopNetwork.sh")
 		command.Dir = scriptDir
-		command.Stdout = os.Stdout
-		command.Stderr = os.Stderr
+		command.Stdout = io.Discard
+		command.Stderr = io.Discard
 
 		err = command.Run()
 		if err != nil {

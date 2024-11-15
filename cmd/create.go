@@ -32,6 +32,8 @@ and usage of using your command.`,
 		}
 		color.Green("Prompt will ask you to give all the details of your network, please provide details acordingly.")
 		inputs.GetInputsFromUser(channelName, version)
+		rootCmd.SetArgs([]string{"list"})
+		rootCmd.Execute()
 	},
 }
 

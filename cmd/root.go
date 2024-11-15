@@ -30,12 +30,11 @@ func Execute() {
 		fmt.Fprintf(os.Stderr, "Whoops. There was an error while executing your CLI '%s'", err)
 		os.Exit(1)
 	}
-	runSurvey()
+	startPrompt()
 }
 
-
-func runSurvey() {
-	options := []string{"Create new network configuration", "Choose network", "Exit"}
+func startPrompt() {
+	options := []string{"Create new domain", "Choose existing domain", "Exit"}
 
 	var selectedOption string
 	prompt := &survey.Select{
@@ -50,12 +49,16 @@ func runSurvey() {
 
 	switch selectedOption {
 
-	case "Create new network configuration":
+	case "Create new domain":
 		rootCmd.SetArgs([]string{"create"})
 		rootCmd.Execute()
 
-	case "Choose network":
+	case "Choose existing domain":
 		rootCmd.SetArgs([]string{"list"})
+		rootCmd.Execute()
+
+	case "Go back":
+		rootCmd.SetArgs([]string{"fabrix"})
 		rootCmd.Execute()
 
 	case "Exit":
