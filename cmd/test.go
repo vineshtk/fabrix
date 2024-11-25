@@ -1,99 +1,147 @@
 package cmd
 
-import (
-	"fmt"
-	"os"
+// import (
+// 	"fmt"
+// 	"io"
+// 	"os"
+// 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/spf13/cobra"
-)
+// 	"github.com/charmbracelet/bubbles/list"
+// 	tea "github.com/charmbracelet/bubbletea"
+// 	"github.com/charmbracelet/lipgloss"
+// 	"github.com/spf13/cobra"
+// )
 
-type model struct {
-	altscreen  bool
-	quitting   bool
-	suspending bool
-}
+// const listHeight = 14
 
-var (
-	keywordStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("204")).Background(lipgloss.Color("235"))
-	helpStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-)
+// var (
+// 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
+// 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
+// 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
+// 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
+// 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
+// 	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
+// )
 
-// networkCmd represents the network command
-var testCmd = &cobra.Command{
-	Use:     "test",
-	Aliases: []string{"tst"},
-	Short:   "Use this command to remove all files for a network",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if _, err := tea.NewProgram(model{}).Run(); err != nil {
-			fmt.Println("Error running program:", err)
-			os.Exit(1)
-		}
-	},
-}
+// type item string
 
-func init() {
-	rootCmd.AddCommand(testCmd)
-	// networkCmd.PersistentFlags().String("foo", "", "A help for foo")
-	// networkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
+// func (i item) FilterValue() string { return "" }
 
-func (m model) Init() tea.Cmd {
-	return nil
-}
+// type itemDelegate struct{}
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.ResumeMsg:
-		m.suspending = false
-		return m, nil
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c", "esc":
-			m.quitting = true
-			return m, tea.Quit
-		case "ctrl+z":
-			m.suspending = true
-			return m, tea.Suspend
-		case " ":
-			var cmd tea.Cmd
-			if m.altscreen {
-				cmd = tea.ExitAltScreen
-			} else {
-				cmd = tea.EnterAltScreen
-			}
-			m.altscreen = !m.altscreen
-			return m, cmd
-		}
-	}
-	return m, nil
-}
+// // networkCmd represents the network command
+// var testCmd = &cobra.Command{
+// 	Use:     "test",
+// 	Aliases: []string{"tst"},
+// 	Short:   "Use this command to remove all files for a network",
+// 	Long: `A longer description that spans multiple lines and likely contains examples
+// and usage of using your command.`,
+// 	Run: func(cmd *cobra.Command, args []string) {
 
-func (m model) View() string {
-	if m.suspending {
-		return ""
-	}
+// 	},
+// }
 
-	if m.quitting {
-		return "Bye!\n"
-	}
+// func init() {
+// 	rootCmd.AddCommand(testCmd)
+// 	// networkCmd.PersistentFlags().String("foo", "", "A help for foo")
+// 	// networkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+// }
 
-	const (
-		altscreenMode = " altscreen mode "
-		inlineMode    = " inline mode "
-	)
+// func (d itemDelegate) Height() int                             { return 1 }
+// func (d itemDelegate) Spacing() int                            { return 0 }
+// func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+// func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+// 	i, ok := listItem.(item)
+// 	if !ok {
+// 		return
+// 	}
 
-	var mode string
-	if m.altscreen {
-		mode = altscreenMode
-	} else {
-		mode = inlineMode
-	}
+// 	str := fmt.Sprintf("%d. %s", index+1, i)
 
-	return fmt.Sprintf("\n\n  You're in %s\n\n\n", keywordStyle.Render(mode)) +
-		helpStyle.Render("  space: switch modes • ctrl-z: suspend • q: exit\n")
-}
+// 	fn := itemStyle.Render
+// 	if index == m.Index() {
+// 		fn = func(s ...string) string {
+// 			return selectedItemStyle.Render("> " + strings.Join(s, " "))
+// 		}
+// 	}
 
+// 	fmt.Fprint(w, fn(str))
+// }
+
+// type model struct {
+// 	list     list.Model
+// 	choice   string
+// 	quitting bool
+// }
+
+// func (m model) Init() tea.Cmd {
+// 	return nil
+// }
+
+// func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+// 	switch msg := msg.(type) {
+// 	case tea.WindowSizeMsg:
+// 		m.list.SetWidth(msg.Width)
+// 		return m, nil
+
+// 	case tea.KeyMsg:
+// 		switch keypress := msg.String(); keypress {
+// 		case "q", "ctrl+c":
+// 			m.quitting = true
+// 			return m, tea.Quit
+
+// 		case "enter":
+// 			i, ok := m.list.SelectedItem().(item)
+// 			if ok {
+// 				m.choice = string(i)
+// 			}
+// 			return m, tea.Quit
+// 		}
+// 	}
+
+// 	var cmd tea.Cmd
+// 	m.list, cmd = m.list.Update(msg)
+// 	return m, cmd
+// }
+
+// func (m model) View() string {
+// 	if m.choice != "" {
+// 		return quitTextStyle.Render(fmt.Sprintf("%s? Sounds good to me.", m.choice))
+// 	}
+// 	if m.quitting {
+// 		return quitTextStyle.Render("Not hungry? That’s cool.")
+// 	}
+// 	return "\n" + m.list.View()
+// }
+
+// func main() {
+// 	items := []list.Item{
+// 		item("Ramen"),
+// 		item("Tomato Soup"),
+// 		item("Hamburgers"),
+// 		item("Cheeseburgers"),
+// 		item("Currywurst"),
+// 		item("Okonomiyaki"),
+// 		item("Pasta"),
+// 		item("Fillet Mignon"),
+// 		item("Caviar"),
+// 		item("Just Wine"),
+// 	}
+
+// 	const defaultWidth = 20
+
+// 	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
+// 	l.Title = "What do you want for dinner?"
+// 	l.SetShowStatusBar(false)
+// 	l.SetFilteringEnabled(false)
+// 	l.Styles.Title = titleStyle
+// 	l.Styles.PaginationStyle = paginationStyle
+// 	l.Styles.HelpStyle = helpStyle
+
+// 	m := model{list: l}
+
+// 	if _, err := tea.NewProgram(m).Run(); err != nil {
+// 		fmt.Println("Error running program:", err)
+// 		os.Exit(1)
+// 	}
+// }

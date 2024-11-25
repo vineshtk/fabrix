@@ -121,6 +121,7 @@ export CORE_PEER_TLS_ENABLED=true
 	fmt.Println("Successfully created startNetwork.sh")
 }
 
+
 func InstallChaincode(domainName string, ccPath string, ccLang string, ccLabel string, ccName string, ccVersion string, ccSequence string) {
 
 	filePath := fmt.Sprintf("./fabrix/%v/Network", domainName)

@@ -334,5 +334,4 @@ func (c *CarContract) RegisterCar(ctx contractapi.TransactionContextInterface, c
 	} else {
 		return "", fmt.Errorf("user under following MSPID: %v cannot able to perform this action", clientOrgID)
 	}
-
 }

@@ -21,5 +21,6 @@ func ShowMainMenu() {
 	color.Green("The helper tool for chaincode developers to create fabric network, it does all the heavy lifting for you!!!")
 	color.Green("You will be guided throughout the process.")
 	color.Yellow("Let's start...")
+	fmt.Print("\n")
 }
 
