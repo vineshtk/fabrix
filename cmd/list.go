@@ -176,14 +176,15 @@ func chooseDomain() {
 	}
 
 	const defaultWidth = 20
+	const listHeight = 10
 
 	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
-	l.Title = "Choose an option:"
+	l.Title = "Please select the Domain:"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = titleStyle
 	l.Styles.PaginationStyle = paginationStyle
-	l.Styles.HelpStyle = helpStyle
+	// l.Styles.HelpStyle = helpStyle
 
 	m := model2{list: l}
 
@@ -196,7 +197,6 @@ func chooseDomain() {
 func domainOptions() {
 	items := []list.Item{
 		item("Start network"),
-		item("Choose existing domain"),
 		item("Info"),
 		item("Deploy chaincode"),
 		item("Down network"),
@@ -206,14 +206,15 @@ func domainOptions() {
 	}
 
 	const defaultWidth = 20
+	const domainsListHeight = 12
 
-	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
+	l := list.New(items, itemDelegate{}, defaultWidth, domainsListHeight)
 	l.Title = "Choose an option:"
 	l.SetShowStatusBar(true)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = titleStyle
 	l.Styles.PaginationStyle = paginationStyle
-	l.Styles.HelpStyle = helpStyle
+	// l.Styles.HelpStyle = helpStyle
 
 	m := model3{list: l}
 
@@ -222,6 +223,10 @@ func domainOptions() {
 		os.Exit(1)
 	}
 }
+
+
+
+
 
 // func domainOptions(domainName string) {
 // 	options := []string{"Start network", "Info", "Deploy chaincode", "Down network", "Remove domain", "Go Back", "Exit"}

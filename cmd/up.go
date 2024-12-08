@@ -10,9 +10,9 @@ import (
 )
 
 // networkCmd represents the network command
-var runCmd = &cobra.Command{
+var upCmd = &cobra.Command{
 	Use: "up",
-	// Aliases: []string{"up"},
+	// Aliases: []string{"sn"},
 	Args:  cobra.ExactArgs(1),
 	Short: "Use this command to start a network and install chaincode",
 	Long: `A longer description that spans multiple lines and likely contains examples
@@ -32,8 +32,6 @@ and usage of using your command.`,
 		command.Dir = scriptDir
 		command.Stdout = io.Discard
 		command.Stderr = io.Discard
-		// command.Stdout = os.Stdout
-		// command.Stderr = os.Stderr
 
 		err = command.Run()
 		if err != nil {
@@ -46,7 +44,7 @@ and usage of using your command.`,
 }
 
 func init() {
-	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(upCmd)
 	// networkCmd.PersistentFlags().String("foo", "", "A help for foo")
 	// networkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

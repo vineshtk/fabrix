@@ -36,7 +36,6 @@ func Execute() {
 	}
 }
 
-const listHeight = 14
 
 var (
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
@@ -112,10 +111,6 @@ func (m model1) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				rootCmd.SetArgs([]string{"list"})
 				rootCmd.Execute()
 		
-			case "Go back":
-				rootCmd.SetArgs([]string{"fabrix"})
-				rootCmd.Execute()
-		
 			case "Exit":
 				fmt.Println("Exiting...")
 				os.Exit(0)
@@ -143,11 +138,11 @@ func startPrompt() {
 	items := []list.Item{
 		item("Create new domain"),
 		item("Choose existing domain"),
-		item("Go back"),
 		item("Exit"),
 	}
 
 	const defaultWidth = 20
+	const listHeight = 10
 
 	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
 	l.Title = "Choose an option:"
@@ -155,7 +150,7 @@ func startPrompt() {
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = titleStyle
 	l.Styles.PaginationStyle = paginationStyle
-	l.Styles.HelpStyle = helpStyle
+	// l.Styles.HelpStyle = helpStyle
 
 	m := model1{list: l}
 
