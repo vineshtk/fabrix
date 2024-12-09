@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 
@@ -30,8 +29,9 @@ and usage of using your command.`,
 
 		command := exec.Command("/bin/bash", "startNetwork.sh")
 		command.Dir = scriptDir
-		command.Stdout = io.Discard
-		command.Stderr = io.Discard
+
+		command.Stdout = os.Stdout
+		command.Stderr = os.Stderr
 
 		err = command.Run()
 		if err != nil {
@@ -39,7 +39,33 @@ and usage of using your command.`,
 			return
 		}
 
+		// p := tea.NewProgram(newModel("Please wait! setting up the network for you!"))
+
+		// go func() {
+		// 	err = command.Start()
+		// 	if err != nil {
+		// 		fmt.Printf("Error starting script: %v\n", err)
+		// 		return
+		// 	}
+
+		// 	// Wait for the script to finish
+		// 	err = command.Wait()
+		// 	if err != nil {
+		// 		fmt.Printf("Error executing script: %v\n", err)
+		// 	}
+
+		// 	// Stop the spinner
+		// 	p.Send(stopMsg{})
+		// }()
+
+		// if _, err := p.Run(); err != nil {
+		// 	fmt.Println("could not run program:", err)
+		// 	os.Exit(1)
+		// }
+
 		fmt.Println("Network started successfully!")
+		rootCmd.SetArgs([]string{"dp"})
+		rootCmd.Execute()
 	},
 }
 
