@@ -54,36 +54,7 @@ func (m model3) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				m.choice = string(i)
 			}
-
-			switch m.choice {
-			case "Start network":
-				rootCmd.SetArgs([]string{"up", choosenDomain})
-				rootCmd.Execute()
-
-			case "Info":
-				rootCmd.SetArgs([]string{"list"})
-				rootCmd.Execute()
-
-			case "Deploy chaincode":
-				rootCmd.SetArgs([]string{"deploy"})
-				rootCmd.Execute()
-
-			case "Down network":
-				rootCmd.SetArgs([]string{"down", choosenDomain})
-				rootCmd.Execute()
-
-			case "Remove domain":
-				rootCmd.SetArgs([]string{"remove", choosenDomain})
-				rootCmd.Execute()
-
-			case "Go Back":
-				rootCmd.SetArgs([]string{"list"})
-				rootCmd.Execute()
-
-			case "Exit":
-				fmt.Println("Exiting...")
-				os.Exit(0)
-			}
+			m.quitting = true
 			return m, tea.Quit
 		}
 	}
@@ -95,7 +66,7 @@ func (m model3) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model3) View() string {
 	if m.choice != "" {
-		return quitTextStyle.Render(fmt.Sprintf("%s? Ok let's continue", m.choice))
+		return quitTextStyle.Render(fmt.Sprintf("You have choosen : %s", m.choice))
 	}
 	if m.quitting {
 		return quitTextStyle.Render("Exit? ... See you later")
@@ -110,7 +81,7 @@ func domainOptions() {
 		item("Deploy chaincode"),
 		item("Down network"),
 		item("Remove domain"),
-		item("Go Back"),
+		item("Home"),
 		item("Exit"),
 	}
 
@@ -127,8 +98,41 @@ func domainOptions() {
 
 	m := model3{list: l}
 
-	if _, err := tea.NewProgram(m).Run(); err != nil {
+	prog, err := tea.NewProgram(m).Run()
+	if err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
+	}
+
+	if m, ok := prog.(model3); ok {
+		switch m.choice {
+		case "Start network":
+			rootCmd.SetArgs([]string{"up", choosenDomain})
+			rootCmd.Execute()
+
+		case "Info":
+			rootCmd.SetArgs([]string{"list"})
+			rootCmd.Execute()
+
+		case "Deploy chaincode":
+			rootCmd.SetArgs([]string{"deploy"})
+			rootCmd.Execute()
+
+		case "Down network":
+			rootCmd.SetArgs([]string{"down", choosenDomain})
+			rootCmd.Execute()
+
+		case "Remove domain":
+			rootCmd.SetArgs([]string{"remove", choosenDomain})
+			rootCmd.Execute()
+			
+		case "Home":
+			rootCmd.SetArgs([]string{"sp"})
+			rootCmd.Execute()
+
+		case "Exit":
+			fmt.Println("Exiting...")
+			os.Exit(0)
+		}
 	}
 }
