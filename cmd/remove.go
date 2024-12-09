@@ -34,6 +34,9 @@ and usage of using your command.`,
 		}
 
 		fmt.Println("Network configurations removed successfully!")
+
+		rootCmd.SetArgs([]string{"list"})
+		rootCmd.Execute()
 	},
 }
 

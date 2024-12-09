@@ -32,8 +32,6 @@ and usage of using your command.`,
 		}
 		color.Green("Prompt will ask you to give all the details of your network, please provide details acordingly.")
 		inputs.GetInputsFromUser(channelName, version)
-		color.Blue("Successfully created the network configuration.\n")
-		color.Blue("you can find the configuration under this directory: fabrix/<domain name>/Network")
 		rootCmd.SetArgs([]string{"sp"})
 		rootCmd.Execute()
 	},

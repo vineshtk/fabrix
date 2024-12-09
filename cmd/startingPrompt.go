@@ -77,7 +77,7 @@ func (m model1) Init() tea.Cmd {
 
 func (m model1) View() string {
 	if m.choice != "" {
-		return quitTextStyle.Render(fmt.Sprintf("%s? Ok let's continue", m.choice))
+		return quitTextStyle.Render(fmt.Sprintf("You have choosen: %s", m.choice))
 	}
 	if m.quitting {
 		return quitTextStyle.Render("Exit? ... See you later")
