@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
@@ -31,33 +33,7 @@ and usage of using your command.`,
 		command := exec.Command("/bin/bash", "stopNetwork.sh")
 		command.Dir = scriptDir
 
-		// stdout, err := command.StdoutPipe()
-		// if err != nil {
-		// 	fmt.Printf("Error creating stdout pipe: %v\n", err)
-		// 	return
-		// }
-
-		// stderr, err := command.StderrPipe()
-		// if err != nil {
-		// 	fmt.Printf("Error creating stderr pipe: %v\n", err)
-		// 	return
-		// }
-
 		p := tea.NewProgram(newModel())
-
-		// go func() {
-		// 	scanner := bufio.NewScanner(stdout)
-		// 	for scanner.Scan() {
-		// 		fmt.Printf("[INFO]: %s\n", scanner.Text())
-		// 	}
-		// }()
-
-		// go func() {
-		// 	scanner := bufio.NewScanner(stderr)
-		// 	for scanner.Scan() {
-		// 		fmt.Printf("[ERROR]: %s\n", scanner.Text())
-		// 	}
-		// }()
 
 		go func() {
 			err = command.Start()
@@ -87,4 +63,71 @@ and usage of using your command.`,
 
 func init() {
 	rootCmd.AddCommand(downCmd)
+}
+
+var (
+	spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
+	appStyle     = lipgloss.NewStyle().Margin(1, 2, 0, 2)
+)
+
+type stopMsg struct{}
+
+type model4 struct {
+	spinner  spinner.Model
+	quitting bool
+}
+
+func newModel() model4 {
+	s := spinner.New()
+	s.Style = spinnerStyle
+	return model4{
+		spinner: s,
+	}
+}
+
+func (m model4) Init() tea.Cmd {
+	return m.spinner.Tick
+}
+
+func (m model4) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
+	switch msg := msg.(type) {
+
+	case stopMsg:
+		m.quitting = true
+		return m, tea.Quit
+
+	case tea.KeyMsg:
+		m.quitting = true
+		return m, tea.Quit
+
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
+	default:
+		return m, nil
+	}
+}
+
+func (m model4) View() string {
+	var s string
+
+	if m.quitting {
+		s += "Quitting...!"
+	} else {
+		s += m.spinner.View() + m.spinner.View() + m.spinner.View() + " Please wait! Clearing the network for you!!..."
+	}
+	s += "\n\n"
+
+	if !m.quitting {
+		s += helpStyle.Render("Press any key to exit")
+	}
+
+	if m.quitting {
+		s += "\n"
+	}
+
+	return appStyle.Render(s)
 }
