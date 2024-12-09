@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/vineshtk/fabrix/pkg/configs"
 )
 
@@ -48,7 +49,10 @@ func GetInputsFromUser(channelName string, version string) {
 		fmt.Scan(&channelName)
 	}
 
-	configs.CreateConfigs(domainName, OrganizationPeers, channelName, version,numOrganizations )	
+	configs.CreateConfigs(domainName, OrganizationPeers, channelName, version, numOrganizations)
+	color.Blue("Successfully created the network configuration.\n")
+	color.Blue("you can find the configuration under this directory: fabrix/%s/Network", domainName)
+
 }
 
 // getInputAsString reads a line of input from the terminal and returns it as a string.
