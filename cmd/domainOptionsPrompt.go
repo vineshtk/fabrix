@@ -79,6 +79,7 @@ func domainOptions() {
 		item("Start network"),
 		item("Info"),
 		item("Deploy chaincode"),
+		item("Upgrade chaincode"),
 		item("Down network"),
 		item("Remove domain"),
 		item("Home"),
@@ -115,7 +116,11 @@ func domainOptions() {
 			rootCmd.Execute()
 
 		case "Deploy chaincode":
-			rootCmd.SetArgs([]string{"deploy"})
+			rootCmd.SetArgs([]string{"deploy", choosenDomain})
+			rootCmd.Execute()
+
+		case "Upgrade chaincode":
+			rootCmd.SetArgs([]string{"upgrade", choosenDomain})
 			rootCmd.Execute()
 
 		case "Down network":
@@ -125,7 +130,7 @@ func domainOptions() {
 		case "Remove domain":
 			rootCmd.SetArgs([]string{"remove", choosenDomain})
 			rootCmd.Execute()
-			
+
 		case "Home":
 			rootCmd.SetArgs([]string{"sp"})
 			rootCmd.Execute()
