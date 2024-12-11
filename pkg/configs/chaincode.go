@@ -3,7 +3,6 @@ package configs
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -74,7 +73,7 @@ export CORE_PEER_TLS_ENABLED=true
 
     echo "—---------------package chaincode—-------------"
 
-	peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/../Chaincode/ --lang golang --label chaincode_1.0
+	peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/../Chaincode/ --lang golang --label $CHAINCODE_LABEL
 	sleep 1
 
 	echo "—---------------install chaincode in ${ORG_NAME} peer—-------------"
@@ -121,7 +120,6 @@ export CORE_PEER_TLS_ENABLED=true
 	fmt.Println("Successfully created startNetwork.sh")
 }
 
-
 func InstallChaincode(domainName string, ccPath string, ccLang string, ccLabel string, ccName string, ccVersion string, ccSequence string) {
 
 	filePath := fmt.Sprintf("./fabrix/%v/Network", domainName)
@@ -156,7 +154,7 @@ export CHAINCODE_SEQUENCE=%s
 export ORDERER_CA=${PWD}/organizations/ordererOrganizations/${DOMAIN_NAME}/orderers/orderer.${DOMAIN_NAME}/msp/tlscacerts/tlsca.${DOMAIN_NAME}-cert.pem
 export FABRIC_CFG_PATH=${PWD}/peercfg
 export CORE_PEER_TLS_ENABLED=true
-peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH} --lang ${CHAINCODE_LANGUAGE} --label chaincode_1.0
+peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH} --lang ${CHAINCODE_LANGUAGE} --label $CHAINCODE_LABEL
 `, domainName, channelName, ccPath, ccLang, ccLabel, ccName, ccVersion, ccSequence)
 
 	// Create a temporary file for the script
@@ -197,13 +195,13 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH
 		peers := orgMap["peers"].([]interface{})
 		firstPeer := peers[0].(map[string]interface{})
 		peerName := firstPeer["name"].(string)
-		peerPort := firstPeer["port"].(uint64)
+		peerPort := uint16(firstPeer["port"].(float64))
 
 		orderMap := viper.Get("orderer").(map[string]interface{})
 		// ordererName := orderMap["name"].(string)
 		ordererPeers := orderMap["peers"].([]interface{})
 		firstOrdererPeer := ordererPeers[0].(map[string]interface{})
-		ordererPort := firstOrdererPeer["port"].(uint64)
+		ordererPort := uint16(firstOrdererPeer["port"].(float64))
 
 		// Append install and approve commands
 		installApproveCommands := fmt.Sprintf(`export ORG_NAME_DOMAIN=%s.%s
@@ -230,7 +228,7 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH
 
 	echo "—---------------Approve chaincode in ${ORG_NAME} peer—-------------"
 
-	peer lifecycle chaincode approveformyorg -o localhost:${ORDERER_PORT} --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --collections-config ../Chaincode/collection.json --package-id $CC_PACKAGE_ID --sequence 1 --tls --cafile $ORDERER_CA --waitForEvent
+	peer lifecycle chaincode approveformyorg -o localhost:${ORDERER_PORT} --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name $CHAINCODE_NAME --version $CHAINCODE_VERSION --collections-config ${PWD}/${CHAINCODE_PATH}/collection.json --package-id $CC_PACKAGE_ID --sequence $CHAINCODE_SEQUENCE --tls --cafile $ORDERER_CA --waitForEvent
 	sleep 1
 	
 	`, orgName, domainName, orgName, peerName, peerPort, upperOrg, ordererPort, orgMSP)
@@ -249,10 +247,10 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH
 	// Append commit commands
 	commitCommands := fmt.Sprintf(`
 	echo "—---------------Commit chaincode —-------------"
-	peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --sequence 1 --collections-config ../Chaincode/collection.json --tls --cafile $ORDERER_CA --output json
-	peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name sample-chaincode --version 1.0 --sequence 1 --collections-config ../Chaincode/collection.json --tls --cafile $ORDERER_CA %v
+	peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name $CHAINCODE_NAME --version $CHAINCODE_VERSION --sequence $CHAINCODE_SEQUENCE --collections-config ${PWD}/${CHAINCODE_PATH}/collection.json --tls --cafile $ORDERER_CA --output json
+	peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.${DOMAIN_NAME} --channelID $CHANNEL_NAME --name $CHAINCODE_NAME --version $CHAINCODE_VERSION --sequence $CHAINCODE_SEQUENCE --collections-config ${PWD}/${CHAINCODE_PATH}/collection.json --tls --cafile $ORDERER_CA %v
 	sleep 1
-	peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name sample-chaincode --cafile $ORDERER_CA
+	peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name $CHAINCODE_NAME --cafile $ORDERER_CA
 
 	`, peerStrings)
 
@@ -277,10 +275,10 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH
 	// Run the script
 	cmd := exec.Command("bash", tmpFile.Name())
 	cmd.Dir = path
-	// cmd.Stdout = os.Stdout
-	// cmd.Stderr = os.Stderr
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	// cmd.Stdout = io.Discard
+	// cmd.Stderr = io.Discard
 
 	err = cmd.Run()
 	if err != nil {
@@ -293,7 +291,7 @@ peer lifecycle chaincode package chaincode.tar.gz --path ${PWD}/${CHAINCODE_PATH
 
 func CompileChaincode(ccPath string, ccLang string) {
 
-packageChaincode := `#!/bin/bash
+	packageChaincode := `#!/bin/bash
 
 echo "Compiling Chaincode"
 
